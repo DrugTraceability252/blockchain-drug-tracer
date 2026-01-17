@@ -1,0 +1,4 @@
+.sidebarHeader {
+    background-color: var(--ant-color-nav-bg-item);
+    padding: 4px 24px;
+}
