@@ -1,6 +1,15 @@
+.sidebar {
+    overflow: auto;
+    height: 100vh;
+    position: sticky;
+    inset-inline-start: 0;
+    top: 0;
+    scrollbar-width: thin;
+}
 .sidebarHeader {
     background-color: var(--ant-color-nav-bg-item);
-    padding: 4px 48px 4px 8px;
+    padding: 4px 8px 4px 8px;
+    height: 58px;
 }
 
 .sidebarUser {

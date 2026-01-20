@@ -1,0 +1,6 @@
+.headerLayout {
+    background-color: var(--ant-color-bg-base);
+    height: 58px;
+    position: sticky;
+    top: 0;
+}

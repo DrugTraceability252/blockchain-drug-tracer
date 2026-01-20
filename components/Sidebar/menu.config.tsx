@@ -1,5 +1,6 @@
-import type { UserRole } from "./types";
+
 import { BellOutlined, HomeOutlined, LayoutOutlined, TeamOutlined } from "@ant-design/icons";
+import type { UserRole } from "constants/type";
 
 export type MenuItem = {
     key: string;

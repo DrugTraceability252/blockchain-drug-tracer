@@ -3,6 +3,7 @@ export const colors = {
 
   bgBase: "#FFFFFF",
   bgPrimary: "#EDF1F5",
+  bgInput: "#E3EBF3",
 
   navBg: "#283342",
   navBgItem: "#1D242E",
@@ -11,4 +12,5 @@ export const colors = {
   red: "#F0483E",
   yellow: "#FED600",
   blue: "#03A9F5",
+
 } as const;
