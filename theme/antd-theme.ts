@@ -11,6 +11,9 @@ export const antdTheme = {
     colorBlue: "#03A9F5"
   },
   components: {
+    Input: {
+      colorBgContainer: "#E3EBF3",
+    },
     Typography: {
       fontFamily: "Poppins, sans-serif",
       fontSizeHeading1: 24,
@@ -32,6 +35,9 @@ export const antdTheme = {
       darkSubMenuItemBg: "#1D242E",
       lineWidth: 0,
       borderRadiusLG: 0,
+    },
+    Breadcrumb: {
+      fontSize: 20,
     }
   }
 };
