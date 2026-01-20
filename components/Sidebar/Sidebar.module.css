@@ -1,0 +1,9 @@
+.sidebarHeader {
+    background-color: var(--ant-color-nav-bg-item);
+    padding: 4px 48px 4px 8px;
+}
+
+.sidebarUser {
+    padding: 12px 16px;
+    color: white;
+}
