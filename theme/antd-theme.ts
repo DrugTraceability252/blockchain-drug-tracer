@@ -31,6 +31,7 @@ export const antdTheme = {
       itemMarginInline: 0,
       darkSubMenuItemBg: "#1D242E",
       lineWidth: 0,
+      borderRadiusLG: 0,
     }
   }
 };

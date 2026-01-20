@@ -23,14 +23,19 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             icon: <HomeOutlined />,
             children: [
                 {
-                    key: "inventory",
-                    label: "Tồn kho",
-                    path: "/manufacturer/warehouse/inventory",
+                    key: "profile",
+                    label: "Hồ sơ thuốc",
+                    path: "/manufacturer/warehouse/profile",
+                },
+                {
+                    key: "batch",
+                    label: "Lô thuốc",
+                    path: "/manufacturer/warehouse/batch",
                 },
             ],
         },
         {
-            key: "facility",
+            key: "facilities",
             label: "Cơ sở",
             icon: <HomeOutlined />,
             path: "/manufacturer/facilities",
@@ -42,7 +47,7 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             path: "/manufacturer/staff",
             },
             {
-            key: "alert",
+            key: "alerts",
             label: "Cảnh báo",
             icon: <BellOutlined />,
             path: "/manufacturer/alerts",

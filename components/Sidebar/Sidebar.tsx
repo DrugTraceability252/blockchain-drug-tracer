@@ -5,6 +5,7 @@ import type { UserRole } from "./types";
 import { Typography } from "antd";
 import { Image } from 'antd';
 import styles from './Sidebar.module.css';
+import { colors } from "theme/colors";
 
 const { Sider } = Layout;
 const { Title, Text } = Typography;
@@ -35,23 +36,20 @@ export default function Sidebar({ role, userName }: Props) {
             {/* Logo */}
             <Flex justify="space-between" align="center" className={styles.sidebarHeader}>
                 <Image src="/main-logo.png" alt="logo" width={48} height={48} preview={false} />
-                <Title level={3} style={{ color: 'white', margin: 0 }}>PharmacyTrace</Title>
+                <Title level={3} style={{ color: colors.bgBase, margin: 0 }}>PharmacyTrace</Title>
             </Flex>
 
             {/* User */}
             <Flex
                 align="center"
                 gap={12}
-                style={{
-                    padding: "12px 16px",
-                    color: "white",
-                }}
+                className={styles.sidebarUser}
             >
                 <Avatar />
 
                 <Flex vertical>
                     <Text style={{ color: "white" }}>{userName}</Text>
-                    <Text style={{ fontSize: 12, color: "#01A768" }}>
+                    <Text style={{ fontSize: 12, color: colors.green }}>
                         Manager
                     </Text>
                 </Flex>
