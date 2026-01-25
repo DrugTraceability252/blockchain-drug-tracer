@@ -1,4 +1,6 @@
+import { useAuth } from "auth/useAuth";
 import type { Route } from "./+types/home";
+
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,5 +10,6 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
-  return <div>Home</div>;
+  const { isLogin } = useAuth();
+  return <div>{isLogin ? "Home" : "Not logged in"}</div>;
 }
