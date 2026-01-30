@@ -1,18 +1,39 @@
-import { Table } from "antd";
+import { Table, Pagination, Flex } from "antd";
+import { useState } from "react";
 import { columns } from "./Column";
 import { MedicineData } from "constants/MockMedicineData";
 
 export default function MedicineTable() {
+    const [page, setPage] = useState(1);
+    const pageSize = 10;
+
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+
+    const data = MedicineData.slice(start, end);
+
     return (
-        <Table
-            columns={columns}
-            dataSource={MedicineData}
-            pagination={{
-                pageSize: 8,
-                showSizeChanger: false,
-                showQuickJumper: false,
-            }}
-            bordered
-        />
+        <Flex vertical style={{ height: "100%" }}>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+                <Table
+                    columns={columns}
+                    dataSource={data}
+                    pagination={false}
+                    bordered
+                    scroll={{ y: '100%' }}
+                />
+            </div>
+
+            <Flex justify="end" style={{ padding: "12px 16px" }}>
+                <Pagination
+                    current={page}
+                    pageSize={pageSize}
+                    total={MedicineData.length}
+                    onChange={setPage}
+                    showSizeChanger={false}
+                    showQuickJumper={false}
+                />
+            </Flex>
+        </Flex>
     );
 }

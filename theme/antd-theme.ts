@@ -26,6 +26,9 @@ export const antdTheme = {
     },
     Layout: {
       siderBg: "#283342",
+      headerBg: "#EDF1F5",
+      headerPadding: "0 0px",
+      headerHeight: 58,
     },
     Menu: {
       darkItemBg: "#283342",

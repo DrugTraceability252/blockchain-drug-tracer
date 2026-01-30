@@ -57,4 +57,11 @@ export const MedicineData: Medicine[] = [
     category: "Generic Medicine",
     stock: 270,
   },
+  {
+    key: "9",
+    name: "Avil 50 Tablet",
+    id: "D06ID232435459",
+    category: "Generic Medicine",
+    stock: 300,
+  },
 ];

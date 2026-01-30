@@ -6,8 +6,9 @@ import { antdTheme } from "theme/antd-theme";
 import { colors } from "theme/colors";
 import Header from "components/Header/Header";
 import Breadcrumb from "components/Breadcrumb/Breadcrumb";
+import "components/Header/Header.shared.css";
 
-const { Content } = Layout;
+const { Content, Header: AntdHeader } = Layout;
 
 export default function MainLayout() {
     const { user } = useAuth();
@@ -19,9 +20,13 @@ export default function MainLayout() {
                 <Layout style={{ backgroundColor: colors.bgPrimary }}>
                     <Header />
                     
-                    <Content style={{ padding: "24px" }}>
-                        <Breadcrumb role={user.role} />
-                        <Outlet />
+                    <Content className="contentLayout" style={{ padding: "24px" }}>
+                        <AntdHeader className="headerLayout">
+                            <Breadcrumb role={user.role} />
+                        </AntdHeader>
+                        <Content className="contentLayoutLowLevel">
+                            <Outlet />
+                        </Content>
                     </Content>
                 </Layout>
             </Layout>

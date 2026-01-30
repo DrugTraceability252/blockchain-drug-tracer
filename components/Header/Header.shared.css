@@ -1,0 +1,21 @@
+.headerLayout {
+    background-color: transparent;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.contentLayout {
+    height: calc(100vh - 58px);
+    overflow-y: auto;
+}
+
+.contentLayoutLowLevel {
+    height: calc(100% - 58px);
+    overflow-y: auto;
+}
+
+.contentLayoutTableLevel {
+    height: calc(100% - 58px);
+    overflow-y: auto;
+}
