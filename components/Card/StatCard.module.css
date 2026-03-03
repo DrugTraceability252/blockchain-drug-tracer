@@ -1,0 +1,16 @@
+.statCard {
+    border-radius: 8px;
+    border-width: 1px;
+    border-style: solid;
+    border-color: #e0e0e0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.statValue {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.statLabel {
+    font-size: 16px;
+}

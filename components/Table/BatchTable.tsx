@@ -1,16 +1,17 @@
 import { Table, Pagination, Flex } from "antd";
 import { useState } from "react";
-import { columns } from "./MedicineColumn";
 import { MedicineData } from "constants/MockMedicineData";
+import { BatchData } from "constants/MockBatchData";
+import { columns } from "./BatchColumn";
 
-export default function MedicineTable() {
+export default function BatchTable() {
     const [page, setPage] = useState(1);
     const pageSize = 10;
 
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
 
-    const data = MedicineData.slice(start, end);
+    const data = BatchData.slice(start, end);
 
     return (
         <Flex vertical style={{ height: "100%" }}>

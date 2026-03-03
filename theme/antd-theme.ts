@@ -40,7 +40,10 @@ export const antdTheme = {
       borderRadiusLG: 0,
     },
     Breadcrumb: {
-      fontSize: 20,
-    }
+      fontSize: 28,
+    },
+    Card: {
+      bodyPadding: 0,
+    },
   }
 };

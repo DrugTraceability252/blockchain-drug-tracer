@@ -1,5 +1,6 @@
 import { Card, Flex } from "antd";
-import { RightOutlined } from "@ant-design/icons";
+import { DoubleRightOutlined} from "@ant-design/icons";
+import style from "./StatCard.module.css";
 
 type StatItem = {
     value: number | string;
@@ -16,7 +17,6 @@ type StatCardProps = {
 export default function StatCard({
     title,
     items,
-    extra,
     onDetail,
 }: StatCardProps) {
     return (
@@ -24,15 +24,16 @@ export default function StatCard({
             title={title}
             extra={
                 <span onClick={onDetail} style={{ cursor: "pointer" }}>
-                Xem chi tiết <RightOutlined />
+                Xem chi tiết <DoubleRightOutlined />
                 </span>
             }
+            className={style.statCard}
         >
-            <Flex justify="space-between">
+            <Flex justify="space-between" style={{ padding: "16px 24px" }}>
                 {items.map((item, idx) => (
                 <div key={idx}>
-                    <div className="stat-value">{item.value}</div>
-                    <div className="stat-label">{item.label}</div>
+                    <div className={style.statValue}>{item.value}</div>
+                    <div className={style.statLabel}>{item.label}</div>
                 </div>
                 ))}
             </Flex>
