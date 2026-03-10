@@ -37,6 +37,7 @@ export default function MainLayout() {
                                         <Button
                                             icon={<ArrowLeftOutlined />}
                                             onClick={() => navigate(-1)}
+                                            style={{marginBottom: 12}}
                                         />
                                         <Breadcrumb role={user.role} />
                                     </Flex>

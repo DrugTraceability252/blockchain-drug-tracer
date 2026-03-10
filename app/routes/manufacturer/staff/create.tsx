@@ -1,11 +1,11 @@
 import { UploadOutlined } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, Layout, Row, Col, Select, Upload } from "antd";
+import { Button, Form, Input, InputNumber, Layout, Row, Col, Select, Upload, DatePicker, type DatePickerProps } from "antd";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect } from "react";
 
 const { TextArea } = Input;
 
-export default function ManufacturerWarehouseCreateProfile() {
+export default function ManufacturerWarehouseCreateStaff() {
     const [form] = Form.useForm();
     const { setHeaderActions } = useHeaderActions();
 
@@ -23,6 +23,11 @@ export default function ManufacturerWarehouseCreateProfile() {
         console.log(values);
     };
 
+    const onChange: DatePickerProps['onChange'] = (date, dateString) => {
+        console.log(date, dateString);
+    };
+
+
     return (
         <Layout.Content className="contentLayoutTableLevel">
             <Form
@@ -32,11 +37,11 @@ export default function ManufacturerWarehouseCreateProfile() {
                 style={{padding: 12}}
             >
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col span={24}>
                         <Form.Item
-                            label="Tên thuốc"
-                            name="medicineName"
-                            rules={[{ required: true, message: "Nhập tên thuốc" }]}
+                            label="Họ và tên"
+                            name="name"
+                            rules={[{ required: true, message: "Nhập họ và tên" }]}
                         >
                             <Input />
                         </Form.Item>
@@ -44,27 +49,21 @@ export default function ManufacturerWarehouseCreateProfile() {
 
                     <Col span={12}>
                         <Form.Item
-                            label="Nhóm thuốc"
-                            name="group"
-                            rules={[{ required: true, message: "Chọn nhóm thuốc" }]}
+                            label="Số CCCD"
+                            name="CCCD"
+                            rules={[{ required: true, message: "Nhập số CCCD" }]}
                         >
-                            <Select
-                                placeholder="Chọn nhóm thuốc"
-                                options={[
-                                    { value: "groupA", label: "Nhóm A" },
-                                    { value: "groupB", label: "Nhóm B" },
-                                ]}
-                            />
+                            <Input/> 
                         </Form.Item>
                     </Col>
 
-                    <Col span={24}>
+                    <Col span={12}>
                         <Form.Item
-                            label="Hướng dẫn sử dụng"
-                            name="usageDirection"
-                            rules={[{ required: true, message: "Nhập hướng dẫn sử dụng" }]}
+                            label="Ngày tháng năm sinh"
+                            name="birthday"
+                            rules={[{ required: true, message: "Nhập ngày tháng năm sinh" }]}
                         >
-                            <TextArea rows={4} />
+                            <DatePicker onChange={onChange} style={{ width: '100%', height: '100%'}}/>
                         </Form.Item>
                     </Col>
 

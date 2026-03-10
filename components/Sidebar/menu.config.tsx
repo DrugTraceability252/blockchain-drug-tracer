@@ -60,13 +60,29 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             icon: <HomeOutlined />,
             path: "/manufacturer/facilities",
         },
-            {
+        {
             key: "staff",
             label: "Nhân viên",
             icon: <TeamOutlined />,
-            path: "/manufacturer/staff",
-            },
-            {
+            children: [
+                {
+                    key: "profile",
+                    label: "Danh sách nhân viên",
+                    path: "/manufacturer/staff",
+                },
+                {
+                    key: "create",
+                    label: "Thêm nhân viên",
+                    path: "/manufacturer/staff/create",
+                },
+                {
+                    key: "register",
+                    label: "Duyệt hồ sơ",
+                    path: "/manufacturer/staff/register",
+                },
+            ],
+        },
+        {
             key: "alerts",
             label: "Cảnh báo",
             icon: <BellOutlined />,
