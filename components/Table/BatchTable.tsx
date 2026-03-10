@@ -3,9 +3,11 @@ import { useState } from "react";
 import { MedicineData } from "constants/MockMedicineData";
 import { BatchData } from "constants/MockBatchData";
 import { columns } from "./BatchColumn";
+import { useNavigate } from "react-router";
 
 export default function BatchTable() {
     const [page, setPage] = useState(1);
+    const navigate = useNavigate();
     const pageSize = 10;
 
     const start = (page - 1) * pageSize;
@@ -22,6 +24,15 @@ export default function BatchTable() {
                     pagination={false}
                     bordered
                     scroll={{ y: '100%' }}
+                    rowKey="id"
+                    onRow={(record) => ({
+                        onClick: () => {
+                            navigate(`/manufacturer/warehouse/batch/${record.key}`, {
+                                state: record
+                            });
+                        },
+                        style: { cursor: "pointer" }
+                    })}
                 />
             </div>
 

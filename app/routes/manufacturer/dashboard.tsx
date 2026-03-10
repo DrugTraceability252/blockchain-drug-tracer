@@ -1,11 +1,29 @@
-import { PlusOutlined, WarningOutlined } from "@ant-design/icons";
-import { Col, Flex, Row } from "antd";
+import { DownloadOutlined, PlusOutlined, WarningOutlined } from "@ant-design/icons";
+import { Button, Col, Flex, Row } from "antd";
 import StatCard from "components/Card/StatCard";
 import SummaryCard from "components/Card/SummaryCard";
+import { useHeaderActions } from "contexts/HeaderActionsContext";
+import { useEffect } from "react";
+import { Link } from "react-router";
 
 export default function ManufacturerDashboard() {
+    const { setHeaderActions } = useHeaderActions();
+
+    useEffect(() => {
+        setHeaderActions(
+            <Flex justify='center' align='center' gap='small'>
+                <Link to="/manufacturer/warehouse/batch/create">
+                    <Button variant='outlined' icon={<DownloadOutlined />} iconPlacement="end" size="large">
+                        Tải xuống báo cáo
+                    </Button>
+                </Link>
+            </Flex>
+        );
+
+        return () => setHeaderActions(null);
+    }, [setHeaderActions]);
     return (
-        <div style={{ padding: 16 }}>
+        <div style={{ padding: 8 }}>
             <Row gutter={[16, 16]}>
                 <Col xs={24} md={12}>
                     <SummaryCard

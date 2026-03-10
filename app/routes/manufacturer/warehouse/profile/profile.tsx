@@ -1,19 +1,33 @@
-import { FilterOutlined, SearchOutlined } from "@ant-design/icons";
+import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Cascader, Flex, Input, Layout } from "antd";
-import BatchTable from "components/Table/BatchTable";
+import MedicineTable from "components/Table/MedicineTable";
+import "components/Header/Header.shared.css";
+import { useHeaderActions } from "contexts/HeaderActionsContext";
+import { useEffect } from "react";
+import { Link } from "react-router";
 
-export default function ManufacturerWarehouseBatch() {
-    const headerActions = (
-        <>
-            <Button icon={<FilterOutlined />} size="large">
-                Bộ lọc
-            </Button>
-            <Button type="primary" size="large">
-                Tạo lô mới
-            </Button>
-        </>
-    );
-    
+export default function ManufacturerWarehouseProfile() {
+    const { setHeaderActions } = useHeaderActions();
+
+    useEffect(() => {
+        setHeaderActions(
+            <Flex justify='center' align='center' gap='small'>
+                <Link to="/manufacturer/warehouse/batch/create">
+                    <Button variant="outlined" icon={<PlusOutlined />} size="large">
+                        Tạo lô thuốc
+                    </Button>
+                </Link>
+
+                <Link to="/manufacturer/warehouse/profile/create">
+                    <Button type="primary" icon={<PlusOutlined />} size="large">
+                        Thêm hồ sơ
+                    </Button>
+                </Link>
+            </Flex>
+        );
+
+        return () => setHeaderActions(null);
+    }, [setHeaderActions]);
     return (
         <>
             <Layout.Header className="headerLayout">
@@ -44,7 +58,7 @@ export default function ManufacturerWarehouseBatch() {
             </Flex>
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
-                <BatchTable />
+                <MedicineTable />
             </Layout.Content>
         </>
     );

@@ -1,8 +1,32 @@
-import { FilterOutlined, SearchOutlined } from "@ant-design/icons";
+import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Cascader, Flex, Input, Layout } from "antd";
 import EmployeeTable from "components/Table/EmployeeTable";
+import { useHeaderActions } from "contexts/HeaderActionsContext";
+import { useEffect } from "react";
+import { Link } from "react-router";
 
 export default function ManufacturerStaff() {
+    const { setHeaderActions } = useHeaderActions();
+
+    useEffect(() => {
+        setHeaderActions(
+            <Flex justify='center' align='center' gap='small'>
+                <Link to="/manufacturer/warehouse/batch/import">
+                    <Button variant="outlined" icon={<PlusOutlined />} size="large">
+                        Duyệt tài khoản
+                    </Button>
+                </Link>
+
+                <Link to="/manufacturer/warehouse/batch/create">
+                    <Button type="primary" icon={<PlusOutlined />} size="large">
+                        Thêm nhân viên
+                    </Button>
+                </Link>
+            </Flex>
+        );
+
+        return () => setHeaderActions(null);
+    }, [setHeaderActions]);
     return (
         <>
             <Layout.Header className="headerLayout">

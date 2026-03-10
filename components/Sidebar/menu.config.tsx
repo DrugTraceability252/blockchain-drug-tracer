@@ -27,11 +27,30 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                     key: "profile",
                     label: "Hồ sơ thuốc",
                     path: "/manufacturer/warehouse/profile",
+                    children: [
+                        {
+                            key: "create",
+                            label: "Thêm thuốc",
+                            path: "/manufacturer/warehouse/profile/create",
+                        },
+                    ],
                 },
                 {
                     key: "batch",
                     label: "Lô thuốc",
                     path: "/manufacturer/warehouse/batch",
+                    children: [
+                        {
+                            key: "create",
+                            label: "Thêm lô",
+                            path: "/manufacturer/warehouse/batch/create",
+                        },
+                        {
+                            key: "detail",
+                            label: "Chi tiết lô",
+                            path: "/manufacturer/warehouse/batch/:id",
+                        },
+                    ],
                 },
             ],
         },

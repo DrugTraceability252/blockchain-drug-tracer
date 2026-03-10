@@ -1,9 +1,26 @@
-import { FilterOutlined, SearchOutlined } from "@ant-design/icons";
+import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Cascader, Flex, Input, Layout } from "antd";
-import MedicineTable from "components/Table/MedicineTable";
-import "components/Header/Header.shared.css";
+import BatchTable from "components/Table/BatchTable";
+import { useHeaderActions } from "contexts/HeaderActionsContext";
+import { useEffect } from "react";
+import { Link } from "react-router";
 
-export default function ManufacturerWarehouseProfile() {
+export default function ManufacturerWarehouseBatch() {
+    const { setHeaderActions } = useHeaderActions();
+
+    useEffect(() => {
+        setHeaderActions(
+            <Flex justify='center' align='center' gap='small'>
+                <Link to="/manufacturer/warehouse/batch/create">
+                    <Button type="primary" icon={<PlusOutlined />} size="large">
+                        Tạo lô thuốc
+                    </Button>
+                </Link>
+            </Flex>
+        );
+
+        return () => setHeaderActions(null);
+    }, [setHeaderActions]);
     return (
         <>
             <Layout.Header className="headerLayout">
@@ -34,7 +51,7 @@ export default function ManufacturerWarehouseProfile() {
             </Flex>
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
-                <MedicineTable />
+                <BatchTable />
             </Layout.Content>
         </>
     );
