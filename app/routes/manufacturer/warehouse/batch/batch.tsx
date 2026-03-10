@@ -1,25 +1,19 @@
 import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Cascader, Flex, Input, Layout } from "antd";
-import EmployeeTable from "components/Table/EmployeeTable";
+import BatchTable from "components/Table/BatchTable";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect } from "react";
 import { Link } from "react-router";
 
-export default function ManufacturerStaff() {
+export default function ManufacturerWarehouseBatch() {
     const { setHeaderActions } = useHeaderActions();
 
     useEffect(() => {
         setHeaderActions(
             <Flex justify='center' align='center' gap='small'>
-                <Link to="/manufacturer/warehouse/batch/import">
-                    <Button variant="outlined" icon={<PlusOutlined />} size="large">
-                        Duyệt tài khoản
-                    </Button>
-                </Link>
-
                 <Link to="/manufacturer/warehouse/batch/create">
                     <Button type="primary" icon={<PlusOutlined />} size="large">
-                        Thêm nhân viên
+                        Tạo lô thuốc
                     </Button>
                 </Link>
             </Flex>
@@ -57,7 +51,7 @@ export default function ManufacturerStaff() {
             </Flex>
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
-                <EmployeeTable />
+                <BatchTable />
             </Layout.Content>
         </>
     );

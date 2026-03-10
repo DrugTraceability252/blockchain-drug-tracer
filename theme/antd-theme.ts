@@ -26,6 +26,9 @@ export const antdTheme = {
     },
     Layout: {
       siderBg: "#283342",
+      headerBg: "#EDF1F5",
+      headerPadding: "0 0px",
+      headerHeight: 58,
     },
     Menu: {
       darkItemBg: "#283342",
@@ -37,7 +40,10 @@ export const antdTheme = {
       borderRadiusLG: 0,
     },
     Breadcrumb: {
-      fontSize: 20,
-    }
+      fontSize: 28,
+    },
+    Card: {
+      bodyPadding: 0,
+    },
   }
 };

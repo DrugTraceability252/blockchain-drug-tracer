@@ -1,6 +1,13 @@
 .headerLayout {
     background-color: var(--ant-color-bg-base);
-    height: 58px;
     position: sticky;
     top: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.headerSearch {
+    width: 60%;
 }

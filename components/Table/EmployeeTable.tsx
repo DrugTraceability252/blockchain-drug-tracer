@@ -1,16 +1,16 @@
 import { Table, Pagination, Flex } from "antd";
 import { useState } from "react";
-import { columns } from "./MedicineColumn";
-import { MedicineData } from "constants/MockMedicineData";
+import { MockEmployeeData } from "constants/MockEmployeeData";
+import { columns } from "./EmployeeColumn";
 
-export default function MedicineTable() {
+export default function EmployeeTable() {
     const [page, setPage] = useState(1);
-    const pageSize = 10;
+    const pageSize = 5;
 
     const start = (page - 1) * pageSize;
     const end = start + pageSize;
 
-    const data = MedicineData.slice(start, end);
+    const data = MockEmployeeData.slice(start, end);
 
     return (
         <Flex vertical style={{ height: "100%" }}>
@@ -20,7 +20,7 @@ export default function MedicineTable() {
                     dataSource={data}
                     pagination={false}
                     bordered
-                    scroll={{ y: '100%' }}
+                    scroll={{ y: "100%" }}
                 />
             </div>
 
@@ -28,7 +28,7 @@ export default function MedicineTable() {
                 <Pagination
                     current={page}
                     pageSize={pageSize}
-                    total={MedicineData.length}
+                    total={MockEmployeeData.length}
                     onChange={setPage}
                     showSizeChanger={false}
                     showQuickJumper={false}
