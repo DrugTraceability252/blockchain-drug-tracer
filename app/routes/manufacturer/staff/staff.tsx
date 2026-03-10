@@ -11,13 +11,13 @@ export default function ManufacturerStaff() {
     useEffect(() => {
         setHeaderActions(
             <Flex justify='center' align='center' gap='small'>
-                <Link to="/manufacturer/warehouse/batch/import">
+                <Link to="/manufacturer/staff/register">
                     <Button variant="outlined" icon={<PlusOutlined />} size="large">
                         Duyệt tài khoản
                     </Button>
                 </Link>
 
-                <Link to="/manufacturer/warehouse/batch/create">
+                <Link to="/manufacturer/staff/create">
                     <Button type="primary" icon={<PlusOutlined />} size="large">
                         Thêm nhân viên
                     </Button>

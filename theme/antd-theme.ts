@@ -1,3 +1,5 @@
+import { Select, type InputNumber } from "antd";
+
 export const antdTheme = {
   token: {
     colorPrimary: "#005C97",
@@ -12,6 +14,12 @@ export const antdTheme = {
   },
   components: {
     Input: {
+      colorBgContainer: "#E3EBF3",
+    },
+    InputNumber: {
+      colorBgContainer: "#E3EBF3",
+    },
+    Select: {
       colorBgContainer: "#E3EBF3",
     },
     Typography: {

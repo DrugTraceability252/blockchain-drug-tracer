@@ -1,24 +1,25 @@
 import { Card, Layout, Row, Col, Table, Tag, Button, Flex, Descriptions } from "antd";
+import { InfoRow } from "components/InfoRow/InfoRow";
+import SupplyChainStep from "components/SupplyChainStep/SupplyChainStep";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect } from "react";
 import { useLocation, useParams } from "react-router";
 
 export default function BatchDetail() {
-    const { id } = useParams();
     const location = useLocation();
     const batch = location.state;
 
     const { setHeaderActions } = useHeaderActions();
     
-        useEffect(() => {
-            setHeaderActions(
-                <Button type="primary" size="large">
-                    Lưu thông tin
-                </Button>
-            );
-    
-            return () => setHeaderActions(null);
-        }, [setHeaderActions]);
+    useEffect(() => {
+        setHeaderActions(
+            <Button type="primary" size="large">
+                Xuất lô thuốc
+            </Button>
+        );
+
+        return () => setHeaderActions(null);
+    }, [setHeaderActions]);
         
     const columns = [
         { title: "Mã hộp", dataIndex: "boxId" },
@@ -41,44 +42,19 @@ export default function BatchDetail() {
 
     return (
         <Layout.Content className="contentLayoutTableLevel">
-            <></>
-            <div style={{padding: 12}}>
-                <Row gutter={24}>
+            <Flex vertical align="center" gap={16}>
+                <SupplyChainStep/>
+                <Row gutter={24} style={{ width: "100%" }}>
                     <Col span={10}>
                         <Card title="Thông tin lô thuốc">
-                            <Descriptions column={1} bordered size="middle">
-                                <Descriptions.Item label="Trạng thái">
-                                    {batch?.status}
-                                </Descriptions.Item>
-
-                                <Descriptions.Item label="Tên thuốc">
-                                    {batch?.medicineName}
-                                </Descriptions.Item>
-
-                                <Descriptions.Item label="Đơn vị quản lý">
-                                    ABCLogistics
-                                </Descriptions.Item>
-
-                                <Descriptions.Item label="Số hộp">
-                                    100
-                                </Descriptions.Item>
-
-                                <Descriptions.Item label="Ngày sản xuất">
-                                    01/11/2025
-                                </Descriptions.Item>
-
-                                <Descriptions.Item label="Ngày kiểm duyệt">
-                                    03/11/2025
-                                </Descriptions.Item>
-
-                                <Descriptions.Item label="Ngày xuất hàng">
-                                    04/11/2025
-                                </Descriptions.Item>
-
-                                <Descriptions.Item label="Hạn sử dụng">
-                                    01/11/2027
-                                </Descriptions.Item>
-                            </Descriptions>
+                            <InfoRow label="Trạng thái" value={batch?.status} />
+                            <InfoRow label="Tên thuốc" value={batch?.medicineName} />
+                            <InfoRow label="Đơn vị quản lý" value="ABCLogistics" />
+                            <InfoRow label="Số hộp" value="100" />
+                            <InfoRow label="Ngày sản xuất" value="01/11/2025" />
+                            <InfoRow label="Ngày kiểm duyệt" value="03/11/2025" />
+                            <InfoRow label="Ngày xuất hàng" value="04/11/2025" />
+                            <InfoRow label="Hạn sử dụng" value="01/11/2027" />
                         </Card>
                     </Col>
 
@@ -92,7 +68,7 @@ export default function BatchDetail() {
                         </Card>
                     </Col>
                 </Row>
-            </div>
+            </Flex>
         </Layout.Content>
     );
 }
