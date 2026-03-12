@@ -14,13 +14,20 @@ export default [
       "routes/manufacturer/warehouse/batch/detail.tsx"
     ),
     route("manufacturer/facilities", "routes/manufacturer/facilities.tsx"),
-
     route("manufacturer/staff", "routes/manufacturer/staff/staff.tsx"),
     route("manufacturer/staff/create", "routes/manufacturer/staff/create.tsx"),
     route("manufacturer/staff/register", "routes/manufacturer/staff/register.tsx"),
-
-
     route("manufacturer/alerts", "routes/manufacturer/alerts.tsx"),
+
+
     route("distributor/dashboard", "routes/distributor/dashboard.tsx"),
+    route("distributor/distribute", "routes/distributor/distribute/distribute.tsx"),
+    route("distributor/staff", "routes/distributor/staff/staff.tsx"),
+    route("distributor/staff/create", "routes/distributor/staff/create.tsx"),
+    route("distributor/staff/register", "routes/distributor/staff/register.tsx"),
+    route("distributor/distribute/:id", "routes/distributor/distribute/detail.tsx"),
+
+    route("regulator/company", "routes/regulator/company.tsx"),
+
   ]),
 ] satisfies RouteConfig;

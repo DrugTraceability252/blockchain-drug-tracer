@@ -98,10 +98,67 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             path: "/distributor/dashboard",
         },
         {
-            key: "warehouse",
-            label: "Kho hàng",
+            key: "distribute",
+            label: "Vận chuyển",
             icon: <HomeOutlined />,
-            path: "/distributor/warehouse",
+            children: [
+                {
+                    key: "create",
+                    label: "Danh sách vận chuyển",
+                    path: "/distributor/distribute",
+                    children: [
+                        {
+                            key: "detail",
+                            label: "Chi tiết vận chuyển",
+                            path: "/distributor/distribute/:id",
+                        },
+                    ]
+                },
+                
+            ]
+        },
+        {
+            key: "staff",
+            label: "Nhân viên",
+            icon: <TeamOutlined />,
+            children: [
+                {
+                    key: "profile",
+                    label: "Danh sách nhân viên",
+                    path: "/distributor/staff",
+                },
+                {
+                    key: "create",
+                    label: "Thêm nhân viên",
+                    path: "/distributor/staff/create",
+                },
+                {
+                    key: "register",
+                    label: "Duyệt hồ sơ",
+                    path: "/distributor/staff/register",
+                },
+            ],
+        },
+        {
+            key: "alerts",
+            label: "Cảnh báo",
+            icon: <BellOutlined />,
+            path: "/manufacturer/alerts",
+        },
+    ],
+
+    REGULATOR: [
+        {
+            key: "dashboard",
+            label: "Quản lý công ty",
+            icon: <LayoutOutlined />,
+            path: "/regulator/company",
+        },
+        {
+            key: "dashboard",
+            label: "Quản lý hàng hóa",
+            icon: <LayoutOutlined />,
+            path: "/regulator/goods",
         },
     ],
 

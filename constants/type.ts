@@ -1,7 +1,8 @@
 export type UserRole =
   | "ADMIN"
   | "MANUFACTURER"
-  | "DISTRIBUTOR";
+  | "DISTRIBUTOR"
+  | "REGULATOR";
 
 export type Medicine = {
   key: string;
