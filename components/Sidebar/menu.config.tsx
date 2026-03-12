@@ -158,7 +158,52 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             key: "dashboard",
             label: "Quản lý hàng hóa",
             icon: <LayoutOutlined />,
-            path: "/regulator/goods",
+            children: [
+                {
+                    key: "profile",
+                    label: "Hồ sơ thuốc",
+                    path: "/regulator/warehouse/profile",
+                },
+                {
+                    key: "batch",
+                    label: "Lô thuốc",
+                    path: "/regulator/warehouse/batch",
+                    children: [
+                        {
+                            key: "create",
+                            label: "Them lô",
+                            path: "/regulator/warehouse/batch/create",
+                        },
+                        {
+                            key: "detail",
+                            label: "Chi tiết lô",
+                            path: "/regulator/warehouse/batch/:id",
+                        },
+                    ],
+                },
+            ]
+        },
+        {
+            key: "dashboard",
+            label: "Quản lý tài khoản",
+            icon: <LayoutOutlined />,
+            children: [
+                {
+                    key: "profile",
+                    label: "Danh sách tài khoản",
+                    path: "/regulator/staff",
+                },
+                {
+                    key: "create",
+                    label: "Them tài khoản",
+                    path: "/regulator/staff/create",
+                },
+                {
+                    key: "register",
+                    label: "Duyệt hồ sơ",
+                    path: "/regulator/staff/register",
+                },
+            ]
         },
     ],
 

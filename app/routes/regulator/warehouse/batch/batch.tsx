@@ -1,11 +1,11 @@
 import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Cascader, Flex, Input, Layout } from "antd";
-import CompanyTable from "components/Table/CompanyTable";
+import BatchTable from "components/Table/BatchTable";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect } from "react";
 import { Link } from "react-router";
 
-export default function RegulatorCompanyManage() {
+export default function ManufacturerWarehouseBatch() {
     const { setHeaderActions } = useHeaderActions();
 
     useEffect(() => {
@@ -51,7 +51,7 @@ export default function RegulatorCompanyManage() {
             </Flex>
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
-                <CompanyTable />
+                <BatchTable />
             </Layout.Content>
         </>
     );

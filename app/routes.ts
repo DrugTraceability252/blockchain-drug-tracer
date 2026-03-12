@@ -28,6 +28,13 @@ export default [
     route("distributor/distribute/:id", "routes/distributor/distribute/detail.tsx"),
 
     route("regulator/company", "routes/regulator/company.tsx"),
-
+    route("regulator/warehouse/batch", "routes/regulator/warehouse/batch/batch.tsx"),
+    route("regulator/warehouse/profile", "routes/regulator/warehouse/profile/profile.tsx"),
+    route("regulator/warehouse/profile/create", "routes/regulator/warehouse/profile/create.tsx"),
+    route("regulator/warehouse/batch/create", "routes/regulator/warehouse/batch/create.tsx"),
+    route("regulator/warehouse/batch/:id", "routes/regulator/warehouse/batch/detail.tsx"),
+    route("regulator/staff", "routes/regulator/staff/staff.tsx"),
+    route("regulator/staff/create", "routes/regulator/staff/create.tsx"),
+    route("regulator/staff/register", "routes/regulator/staff/register.tsx"),
   ]),
 ] satisfies RouteConfig;

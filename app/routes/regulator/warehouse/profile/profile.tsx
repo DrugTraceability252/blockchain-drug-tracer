@@ -1,19 +1,26 @@
 import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Cascader, Flex, Input, Layout } from "antd";
-import CompanyTable from "components/Table/CompanyTable";
+import MedicineTable from "components/Table/MedicineTable";
+import "components/Header/Header.shared.css";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect } from "react";
 import { Link } from "react-router";
 
-export default function RegulatorCompanyManage() {
+export default function ManufacturerWarehouseProfile() {
     const { setHeaderActions } = useHeaderActions();
 
     useEffect(() => {
         setHeaderActions(
             <Flex justify='center' align='center' gap='small'>
                 <Link to="/manufacturer/warehouse/batch/create">
-                    <Button type="primary" icon={<PlusOutlined />} size="large">
+                    <Button variant="outlined" icon={<PlusOutlined />} size="large">
                         Tạo lô thuốc
+                    </Button>
+                </Link>
+
+                <Link to="/manufacturer/warehouse/profile/create">
+                    <Button type="primary" icon={<PlusOutlined />} size="large">
+                        Thêm hồ sơ
                     </Button>
                 </Link>
             </Flex>
@@ -51,7 +58,7 @@ export default function RegulatorCompanyManage() {
             </Flex>
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
-                <CompanyTable />
+                <MedicineTable />
             </Layout.Content>
         </>
     );

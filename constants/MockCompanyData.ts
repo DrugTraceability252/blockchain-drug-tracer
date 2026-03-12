@@ -1,0 +1,58 @@
+export const CompanyData = [
+  {
+    id: 1,
+    name: "TRAPHACO JOINT STOCK",
+    companyId: "CT06ID23243555",
+    group: "Nhà sản xuất",
+    facilities: 3,
+  },
+  {
+    id: 2,
+    name: "SANOFI–AVENTIS VIETNAM",
+    companyId: "CT06ID23243545",
+    group: "Nhà sản xuất",
+    facilities: 2,
+  },
+  {
+    id: 3,
+    name: "IMEXPHARM CORPORATION",
+    companyId: "CT06ID23243545",
+    group: "Nhà sản xuất",
+    facilities: 1,
+  },
+  {
+    id: 4,
+    name: "DHG PHARMACEUTICAL",
+    companyId: "CT06ID23243545",
+    group: "Nhà sản xuất",
+    facilities: 4,
+  },
+  {
+    id: 5,
+    name: "Nhà thuốc An Bình",
+    companyId: "CT06ID23243545",
+    group: "Nhà thuốc",
+    facilities: 1,
+  },
+  {
+    id: 6,
+    name: "Nhà thuốc An Tâm",
+    companyId: "CT06ID23243545",
+    group: "Nhà thuốc",
+    facilities: 1,
+  },
+  {
+    id: 7,
+    name: "Nhà thuốc An Khang",
+    companyId: "CT06ID23243545",
+    group: "Nhà thuốc",
+    facilities: 1,
+  },
+  {
+    id: 8,
+    name: "Vận chuyển Viettel Post",
+    companyId: "CT06ID23243545",
+    group: "Vận chuyển",
+    facilities: 1,
+  },
+];
