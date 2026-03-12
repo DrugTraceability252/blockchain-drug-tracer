@@ -1,6 +1,5 @@
 import { Table, Pagination, Flex } from "antd";
 import { useState } from "react";
-import { MedicineData } from "constants/MockMedicineData";
 import { BatchData } from "constants/MockBatchData";
 import { columns } from "./BatchColumn";
 import { useNavigate } from "react-router";
@@ -27,7 +26,7 @@ export default function BatchTable() {
                     rowKey="id"
                     onRow={(record) => ({
                         onClick: () => {
-                            navigate(`/manufacturer/warehouse/batch/${record.key}`, {
+                            navigate(`${record.key}`, {
                                 state: record
                             });
                         },
@@ -40,7 +39,7 @@ export default function BatchTable() {
                 <Pagination
                     current={page}
                     pageSize={pageSize}
-                    total={MedicineData.length}
+                    total={BatchData.length}
                     onChange={setPage}
                     showSizeChanger={false}
                     showQuickJumper={false}
