@@ -17,46 +17,68 @@ const steps = [
     { key: "consumer", label: "Người tiêu dùng", icon: <UserOutlined /> },
 ];
 
-export default function SupplyChainStep({current = 1,}: {current?: number;}) {
+export default function SupplyChainStep({ 
+    current = 0, 
+    isRecalled = false 
+}: { 
+    current?: number; 
+    isRecalled?: boolean 
+}) {
+    // Nếu lô thuốc bị thu hồi, hiển thị màu đỏ (volcano). Ngược lại hiển thị màu xanh lá (#00a870)
+    const activeColor = isRecalled ? "#fa541c" : "#00a870";
+
     return (
-        <Flex align="center" justify="space-between" style={{ width: "70%" }}>
-        {steps.map((step, index) => {
-            const active = index === current;
+        <Flex align="center" justify="space-between" style={{ width: "70%", margin: "24px 0" }}>
+            {steps.map((step, index) => {
+                // Logic tính toán trạng thái của bước
+                const isCompleted = index < current;
+                const isActive = index === current;
+                
+                // Trạng thái màu sắc
+                const color = (isCompleted || isActive) ? activeColor : "#ccc";
+                const lineColor = isCompleted ? activeColor : "#e8e8e8";
 
-            return (
-            <Flex key={step.key} align="center" gap={12}>
-                <Flex vertical align="center">
-                <div
-                    style={{
-                    fontSize: 28,
-                    color: active ? "#00a870" : "#999",
-                    }}
-                >
-                    {step.icon}
-                </div>
+                return (
+                    <Flex key={step.key} align="center" gap={12} style={{ flex: index !== steps.length - 1 ? 1 : 'none' }}>
+                        <Flex vertical align="center" style={{ minWidth: 80 }}>
+                            <div
+                                style={{
+                                    fontSize: isActive ? 32 : 28, // Bước hiện tại sẽ to hơn một chút
+                                    color: color,
+                                    transition: "all 0.3s ease"
+                                }}
+                            >
+                                {step.icon}
+                            </div>
 
-                <Text
-                    style={{
-                    marginTop: 6,
-                    color: active ? "#00a870" : "#999",
-                    fontWeight: active ? 600 : 400,
-                    }}
-                >
-                    {step.label}
-                </Text>
-                </Flex>
+                            <Text
+                                style={{
+                                    marginTop: 8,
+                                    color: color,
+                                    fontWeight: isActive ? 600 : 400,
+                                    transition: "all 0.3s ease"
+                                }}
+                            >
+                                {step.label}
+                            </Text>
+                        </Flex>
 
-                {index !== steps.length - 1 && (
-                <div
-                    style={{
-                    width: 80,
-                    borderTop: "2px dashed #bbb",
-                    }}
-                />
-                )}
-            </Flex>
-            );
-        })}
+                        {/* Đường kẻ nối giữa các bước */}
+                        {index !== steps.length - 1 && (
+                            <div
+                                style={{
+                                    flex: 1,
+                                    margin: "0 8px",
+                                    height: 0,
+                                    borderTop: `2px ${isCompleted ? 'solid' : 'dashed'} ${lineColor}`,
+                                    transition: "all 0.3s ease",
+                                    transform: "translateY(-12px)" // Đẩy đường kẻ lên ngang tâm icon
+                                }}
+                            />
+                        )}
+                    </Flex>
+                );
+            })}
         </Flex>
     );
 }

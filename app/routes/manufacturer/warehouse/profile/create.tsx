@@ -1,93 +1,204 @@
 import { UploadOutlined } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, Layout, Row, Col, Select, Upload } from "antd";
+import { Button, Form, Input, Layout, Row, Col, Select, Upload, message, Card, DatePicker, InputNumber } from "antd";
+import { drugProfileApi } from "api/drugProfileApi";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 
 const { TextArea } = Input;
+
+const normFile = (e: any) => {
+    if (Array.isArray(e)) return e;
+    return e?.fileList;
+};
 
 export default function ManufacturerWarehouseCreateProfile() {
     const [form] = Form.useForm();
     const { setHeaderActions } = useHeaderActions();
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
         setHeaderActions(
-            <Button type="primary" size="large" onClick={() => form.submit()}>
-                Lưu thông tin
+            <Button 
+                type="primary" 
+                size="large" 
+                onClick={() => form.submit()}
+                loading={loading}
+            >
+                Lưu hồ sơ thuốc
             </Button>
         );
-
         return () => setHeaderActions(null);
-    }, [setHeaderActions, form]);
+    }, [setHeaderActions, form, loading]);
 
-    const onFinish = (values: any) => {
-        console.log(values);
+    const onFinish = async (values: any) => {
+        setLoading(true);
+        try {
+            // Lấy danh sách tên file làm mock documentHashes
+            const documentHashes = values.documentHashes?.map((f: any) => f.name) || ["mock_hash_abc123"];
+
+            // 🎯 MAP DỮ LIỆU CHUẨN 100% THEO API BACKEND
+            const payload = {
+                drugId: values.drugId,
+                drugName: values.drugName,
+                manufacturerOrgId: "ORG001", // Hardcode tạm thời
+                licenseNumber: values.licenseNumber,
+                // Chuyển đổi DatePicker (dayjs object) sang chuỗi ISO 8601
+                licenseExpiry: values.licenseExpiry ? values.licenseExpiry.toISOString() : new Date().toISOString(),
+                decisionNumber: values.decisionNumber,
+                approvalYear: values.approvalYear, // Đã là số nguyên (int32)
+                approvalBatch: values.approvalBatch,
+                ingredient: values.ingredient,
+                strength: values.strength,
+                drugType: values.drugType,
+                dosageForm: values.dosageForm,
+                packaging: values.packaging,
+                qualityStandard: values.qualityStandard,
+                shelfLife: values.shelfLife,
+                documentHashes: documentHashes
+            };
+
+            await drugProfileApi.create(payload);
+            message.success("Tạo hồ sơ thuốc thành công!");
+            navigate("/manufacturer/warehouse/profile");
+
+        } catch (error) {
+            console.error("Lỗi khi tạo hồ sơ thuốc:", error);
+            message.error("Có lỗi xảy ra khi lưu thông tin. Vui lòng kiểm tra lại!");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <Layout.Content className="contentLayoutTableLevel">
+        <Layout.Content style={{ padding: '12px'}}>
             <Form
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
-                style={{padding: 12}}
             >
-                <Row gutter={24}>
-                    <Col span={12}>
-                        <Form.Item
-                            label="Tên thuốc"
-                            name="medicineName"
-                            rules={[{ required: true, message: "Nhập tên thuốc" }]}
-                        >
-                            <Input />
-                        </Form.Item>
-                    </Col>
-
-                    <Col span={12}>
-                        <Form.Item
-                            label="Nhóm thuốc"
-                            name="group"
-                            rules={[{ required: true, message: "Chọn nhóm thuốc" }]}
-                        >
-                            <Select
-                                placeholder="Chọn nhóm thuốc"
-                                options={[
-                                    { value: "groupA", label: "Nhóm A" },
-                                    { value: "groupB", label: "Nhóm B" },
-                                ]}
-                            />
-                        </Form.Item>
-                    </Col>
-
+                <Row gutter={[24, 12]}>
+                    {/* BLOCK 1: THÔNG TIN CƠ BẢN */}
                     <Col span={24}>
-                        <Form.Item
-                            label="Hướng dẫn sử dụng"
-                            name="usageDirection"
-                            rules={[{ required: true, message: "Nhập hướng dẫn sử dụng" }]}
-                        >
-                            <TextArea rows={4} />
-                        </Form.Item>
+                        <Card title="Thông tin cơ bản">
+                            <div style={{padding: 8}}>
+                            <Row gutter={16}>
+                                <Col span={8}>
+                                    <Form.Item label="Mã thuốc (Drug ID)" name="drugId" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: DRUG_HAPA_001" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={8}>
+                                    <Form.Item label="Tên thuốc" name="drugName" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: Hapacol 500" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={4}>
+                                    <Form.Item label="Nhóm thuốc" name="drugType" rules={[{ required: true }]}>
+                                        <Select options={[
+                                            { value: "OTC", label: "Không kê đơn (OTC)" },
+                                            { value: "PRESCRIPTION", label: "Thuốc kê đơn" },
+                                            { value: "VACCINE", label: "Vắc-xin" }
+                                        ]} />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={4}>
+                                    <Form.Item label="Dạng bào chế" name="dosageForm" rules={[{ required: true }]}>
+                                        <Select options={[
+                                            { value: "TABLET", label: "Viên nén (TABLET)" },
+                                            { value: "CAPSULE", label: "Viên nang (CAPSULE)" },
+                                            { value: "INJECTION", label: "Thuốc tiêm" },
+                                            { value: "SYRUP", label: "Siro" }
+                                        ]} />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                            </div>
+                        </Card>
                     </Col>
 
+                    {/* BLOCK 2: THÀNH PHẦN & ĐÓNG GÓI */}
                     <Col span={24}>
-                        <Form.Item
-                            label="Tác dụng phụ"
-                            name="sideEffects"
-                            rules={[{ required: true, message: "Nhập tác dụng phụ" }]}
-                        >
-                            <TextArea rows={4} />
-                        </Form.Item>
+                        <Card title="Thành phần & Đóng gói">
+                            <div style={{padding: 8}}>
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item label="Thành phần (Ingredient)" name="ingredient" rules={[{ required: true }]}>
+                                        <TextArea rows={2} placeholder="VD: Paracetamol..." />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item label="Hàm lượng (Strength)" name="strength" rules={[{ required: true }]}>
+                                        <TextArea rows={2} placeholder="VD: 500mg" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={8}>
+                                    <Form.Item label="Quy cách đóng gói" name="packaging" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: Hộp 10 vỉ x 10 viên" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={8}>
+                                    <Form.Item label="Tiêu chuẩn chất lượng" name="qualityStandard" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: TCCS, DĐVN V" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={8}>
+                                    <Form.Item label="Hạn sử dụng (Shelf Life)" name="shelfLife" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: 36 tháng" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                            </div>
+                        </Card>
                     </Col>
 
+                    {/* BLOCK 3: HỒ SƠ CẤP PHÉP */}
                     <Col span={24}>
-                        <Form.Item
-                            label="Hồ sơ minh chứng"
-                            name="sideEffects"
-                            rules={[{ required: true, message: "Nhập tác dụng phụ" }]}
-                        >
-                            <Upload>
-                                <Button icon={<UploadOutlined />}>Upload</Button>
-                            </Upload>
-                        </Form.Item>
+                        <Card title="Hồ sơ cấp phép & Pháp lý">
+                            <div style={{padding: 8}}>
+                            <Row gutter={16}>
+                                <Col span={6}>
+                                    <Form.Item label="Số đăng ký (License No.)" name="licenseNumber" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: VD-12345-20" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={6}>
+                                    <Form.Item label="Hạn giấy phép" name="licenseExpiry" rules={[{ required: true }]}>
+                                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={4}>
+                                    <Form.Item label="Số quyết định" name="decisionNumber" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: 123/QĐ-QLD" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={4}>
+                                    <Form.Item label="Năm phê duyệt" name="approvalYear" rules={[{ required: true }]}>
+                                        <InputNumber style={{ width: '100%' }} min={2000} max={2100} placeholder="VD: 2024" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={4}>
+                                    <Form.Item label="Đợt phê duyệt" name="approvalBatch" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: Đợt 101" />
+                                    </Form.Item>
+                                </Col>
+                                
+                                <Col span={24}>
+                                    <Form.Item
+                                        label="Tài liệu minh chứng (Document Hashes)"
+                                        name="documentHashes"
+                                        valuePropName="fileList"
+                                        getValueFromEvent={normFile}
+                                    >
+                                        <Upload name="file" beforeUpload={() => false} multiple>
+                                            <Button icon={<UploadOutlined />}>Tải lên tài liệu (PDF, Word...)</Button>
+                                        </Upload>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                            </div>
+                        </Card>
                     </Col>
                 </Row>
             </Form>

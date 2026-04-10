@@ -1,32 +1,35 @@
-import { Table, Pagination, Flex } from "antd";
-import { useState } from "react";
-import { BatchData } from "constants/MockBatchData";
+import { Table, Pagination, Flex, type TableProps } from "antd";
 import { columns } from "./BatchColumn";
 import { useNavigate } from "react-router";
 
-export default function BatchTable() {
-    const [page, setPage] = useState(1);
+interface BatchTableProps extends TableProps<any> {
+    total?: number;
+    onPageChange?: (page: number) => void;
+}
+
+export default function BatchTable({ 
+    dataSource, 
+    pagination, 
+    total, 
+    onPageChange, 
+    loading 
+}: BatchTableProps) {
     const navigate = useNavigate();
-    const pageSize = 10;
-
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-
-    const data = BatchData.slice(start, end);
 
     return (
         <Flex vertical style={{ height: "100%" }}>
             <div style={{ flex: 1, overflow: "hidden" }}>
                 <Table
                     columns={columns}
-                    dataSource={data}
+                    dataSource={dataSource}
                     pagination={false}
                     bordered
                     scroll={{ y: '100%' }}
-                    rowKey="id"
+                    rowKey="batchId"
+                    loading={loading}
                     onRow={(record) => ({
                         onClick: () => {
-                            navigate(`${record.key}`, {
+                            navigate(`${record.batchId}`, {
                                 state: record
                             });
                         },
@@ -34,17 +37,16 @@ export default function BatchTable() {
                     })}
                 />
             </div>
-
-            <Flex justify="end" style={{ padding: "12px 16px" }}>
+            {pagination !== false && <Flex justify="end" style={{ padding: "12px 16px" }}>
                 <Pagination
-                    current={page}
-                    pageSize={pageSize}
-                    total={BatchData.length}
-                    onChange={setPage}
+                    current={pagination?.current}
+                    pageSize={pagination?.pageSize}
+                    total={total}
+                    onChange={onPageChange}
                     showSizeChanger={false}
                     showQuickJumper={false}
                 />
-            </Flex>
+            </Flex>}
         </Flex>
     );
 }

@@ -1,52 +1,67 @@
-import { Table, Pagination, Flex } from "antd";
-import { useState } from "react";
-import { columns } from "./CompanyColumn";
-import { CompanyData } from "constants/MockCompanyData";
-import { useNavigate } from "react-router";
+import { Table, Tag } from 'antd';
+import { Link } from 'react-router'; 
 
-export default function CompanyTable() {
-  const [page, setPage] = useState(1);
-  const navigate = useNavigate();
-  const pageSize = 8;
+const statusMap: Record<string, { color: string; label: string }> = {
+    ACTIVE: { color: "green", label: "Đang hoạt động" },
+    INACTIVE: { color: "default", label: "Ngừng hoạt động" },
+    SUSPENDED: { color: "red", label: "Bị đình chỉ" },
+    PENDING: { color: "orange", label: "Chờ duyệt" }
+};
 
-  const start = (page - 1) * pageSize;
-  const end = start + pageSize;
+const orgTypeMap: Record<string, { color: string; label: string }> = {
+    MANUFACTURER: { color: "gold", label: "Nhà sản xuất" },
+    DISTRIBUTOR: { color: "blue", label: "Nhà phân phối" },
+    PHARMACY: { color: "cyan", label: "Nhà thuốc / Bán lẻ" },
+    HOSPITAL: { color: "green", label: "Bệnh viện" },
+    REGULATOR: { color: "purple", label: "Cơ quan Quản lý" }
+};
 
-  const data = CompanyData.slice(start, end);
+export default function CompanyTable({ dataSource, loading, pagination, onChange }: any) {
+    const columns = [
+        { title: 'Tên tổ chức', dataIndex: 'orgName', key: 'orgName' },
+        { title: 'Mã số thuế', dataIndex: 'taxCode', key: 'taxCode' },
+        { title: 'Số giấy phép', dataIndex: 'licenseNumber', key: 'licenseNumber' },
+        { 
+            title: 'Loại hình', 
+            dataIndex: 'orgType', 
+            key: 'orgType',
+            render: (type: string) => {
+                const config = orgTypeMap[type] || { color: 'default', label: type };
+                return <Tag color={config.color}>{config.label}</Tag>;
+            }
+        },
+        { title: 'Điện thoại', dataIndex: 'contactPhone', key: 'contactPhone' },
+        
+        {
+            title: 'Trạng thái',
+            dataIndex: 'status',
+            key: 'status',
+            render: (status: string) => {
+                const config = statusMap[status] || { color: "default", label: status || "Không rõ" };
+                return <Tag color={config.color} style={{ borderRadius: '4px' }}>{config.label}</Tag>;
+            }
+        },
 
-  return (
-    <Flex vertical style={{ height: "100%" }}>
-      <div style={{ flex: 1 }}>
-        <Table
-          columns={columns}
-          dataSource={data}
-          pagination={false}
-          bordered
-          rowKey="id"
-          onRow={(record) => ({
-            onClick: () => {
-              navigate(`${record.id}`, {
-                state: record,
-              });
-            },
-            style: { cursor: "pointer" },
-          })}
+        {
+            title: 'Hành động',
+            key: 'action',
+            render: (_: any, record: any) => (
+                // Lấy orgId để nối vào URL. Bạn đảm bảo Route của trang chi tiết là /regulator/companies/:id nhé
+                <Link to={`/regulator/company/${record.orgId}`} style={{ color: '#1890ff', fontWeight: 500 }}>
+                    Xem chi tiết »
+                </Link>
+            )
+        }
+    ];
+
+    return (
+        <Table 
+            columns={columns} 
+            dataSource={dataSource} 
+            loading={loading}
+            pagination={pagination}
+            onChange={onChange}
+            rowKey="orgId"
         />
-      </div>
-
-      <Flex justify="space-between" style={{ padding: "12px 16px" }}>
-        <span>
-          {start + 1} - {Math.min(end, CompanyData.length)} / {CompanyData.length}
-        </span>
-
-        <Pagination
-          current={page}
-          pageSize={pageSize}
-          total={CompanyData.length}
-          onChange={setPage}
-          showSizeChanger={false}
-        />
-      </Flex>
-    </Flex>
-  );
+    );
 }

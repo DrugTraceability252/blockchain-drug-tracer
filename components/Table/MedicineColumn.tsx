@@ -1,5 +1,6 @@
 import { Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
+import { Link as RouterLink } from "react-router";
 import type { Medicine } from "constants/type";
 
 const { Link } = Typography;
@@ -7,39 +8,39 @@ const { Link } = Typography;
 export const columns: ColumnsType<Medicine> = [
   {
     title: "Tên thuốc",
-    dataIndex: "name",
+    dataIndex: "drugName",
     key: "name",
-    sorter: (a, b) => a.name.localeCompare(b.name),
+    sorter: (a, b) => a.drugName.localeCompare(b.drugName),
   },
   {
     title: "ID thuốc",
-    dataIndex: "id",
+    dataIndex: "drugId",
     key: "id",
-    sorter: (a, b) => a.id.localeCompare(b.id),
+    sorter: (a, b) => a.drugId.localeCompare(b.drugId),
   },
   {
     title: "Nhóm thuốc",
-    dataIndex: "category",
-    key: "category",
+    dataIndex: "drugType",
+    key: "drugType",
     filters: [
       { text: "Generic Medicine", value: "Generic Medicine" },
       { text: "Diabetes", value: "Diabetes" },
     ],
-    onFilter: (value, record) => record.category === value,
+    onFilter: (value, record) => record.drugType === value,
   },
   {
-    title: "Còn hàng",
-    dataIndex: "stock",
-    key: "stock",
-    sorter: (a, b) => a.stock - b.stock,
+    title: "Loại thuốc",
+    dataIndex: "type",
+    key: "type",
+    
   },
   {
     title: "Hành động",
     key: "action",
     render: (_, record) => (
-      <Link onClick={() => console.log("View", record.id)}>
-        Xem chi tiết »
-      </Link>
+      <RouterLink to={`/manufacturer/warehouse/profile/${record.drugId}`}>
+        <Link>Xem chi tiết</Link>
+      </RouterLink>
     ),
   },
 ];

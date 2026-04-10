@@ -33,6 +33,12 @@ export default function Sidebar({ role, userName }: Props) {
         onClick: item.path ? () => navigate(item.path!) : undefined,
     }));
 
+    const [openKeys, setOpenKeys] = useState(
+        menuByRole[role]
+            .filter(item => item.children)
+            .map(item => item.key)
+    );
+
     return (
         <Sider
             width={240}
@@ -76,11 +82,12 @@ export default function Sidebar({ role, userName }: Props) {
             </Flex>
 
 
-            {/* Menu */}
             <Menu
                 mode="inline"
                 theme="dark"
                 selectedKeys={[location.pathname]}
+                openKeys={openKeys}
+                onOpenChange={setOpenKeys}
                 items={items}
             />
         </Sider>

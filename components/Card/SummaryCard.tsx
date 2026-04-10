@@ -7,11 +7,11 @@ type SummaryCardProps = {
     value: number | string;
     label: string;
     footerText: string;
-    color: "blue" | "red";
+    color: "blue" | "red" | "orange" | "green";
     onClick?: () => void;
 };
 
-export default function SummaryCard({
+export default function  SummaryCard({
     icon,
     value,
     label,

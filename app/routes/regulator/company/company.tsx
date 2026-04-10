@@ -1,64 +1,55 @@
 import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Cascader, Flex, Input, Layout, message } from "antd";
-import EmployeeTable from "components/Table/EmployeeTable";
+import CompanyTable from "components/Table/CompanyTable";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router";
-import { employeeApi } from "api/employeeApi";
-import { useAuth } from "auth/useAuth";
+import { organizationApi } from "api/organizationApi";
 
-export default function RegulatorStaff() {
+export default function RegulatorCompanyManage() {
     const { setHeaderActions } = useHeaderActions();
-    const { user } = useAuth(); 
 
-    const [employees, setEmployees] = useState([]);
+    const [companies, setCompanies] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(0);
-    
+
     const [queryParams, setQueryParams] = useState({
         page: 1,
         size: 10,
         search: "",
-        role: undefined as string | undefined
+        orgType: undefined as string | undefined
     });
 
-    const fetchEmployees = useCallback(async () => {
-        if (!user?.orgId) return; 
+    const fetchCompanies = useCallback(async () => {
         setLoading(true);
         try {
-            const response = await employeeApi.getAll({
-                orgId: user.orgId,
-                page: queryParams.page,
+            const response = await organizationApi.getAll({
+                page: queryParams.page - 1, 
                 size: queryParams.size,
                 search: queryParams.search,
-                role: queryParams.role
+                orgType: queryParams.orgType
             });
             
-            setEmployees(response.data || response.content || []);
+            setCompanies(response.data || response.content || []);
             setTotal(response.totalElements || response.total || 0);
         } catch (error) {
-            console.error("Lỗi khi tải danh sách nhân viên:", error);
-            message.error("Không thể tải danh sách nhân viên");
+            console.error("Lỗi khi tải danh sách công ty:", error);
+            message.error("Không thể tải danh sách tổ chức/công ty!");
         } finally {
             setLoading(false);
         }
-    }, [user?.orgId, queryParams]);
+    }, [queryParams]);
 
     useEffect(() => {
-        fetchEmployees();
-    }, [fetchEmployees]);
+        fetchCompanies();
+    }, [fetchCompanies]);
 
     useEffect(() => {
         setHeaderActions(
             <Flex justify='center' align='center' gap='small'>
-                <Link to="/regulator/staff/register">
-                    <Button variant="outlined" icon={<PlusOutlined />} size="large">
-                        Duyệt tài khoản
-                    </Button>
-                </Link>
-                <Link to="/regulator/staff/create">
+                <Link to="/regulator/companies/create"> 
                     <Button type="primary" icon={<PlusOutlined />} size="large">
-                        Thêm cán bộ / nhân viên
+                        Đăng ký tổ chức
                     </Button>
                 </Link>
             </Flex>
@@ -84,36 +75,42 @@ export default function RegulatorStaff() {
                 <Flex justify='space-between' align='center' gap='large'>
                 <Flex flex={1}>
                     <Input
-                        placeholder="Tìm kiếm theo tên, tài khoản, email..."
+                        placeholder="Tìm kiếm theo tên công ty, mã số thuế..."
                         size="large"
                         suffix={<SearchOutlined />}
-                        onPressEnter={() => fetchEmployees()} 
                         onChange={handleSearch}
+                        onPressEnter={() => fetchCompanies()}
                     />
                 </Flex>
                 <Flex flex={1} justify='space-between' align='center' gap='small'>
                     <Flex flex={1} justify='flex-end'>
-                        <Button icon={<FilterOutlined />} size="large" type='text' />
+                        <Button 
+                            icon={<FilterOutlined />} 
+                            size="large"
+                            type='text'
+                        />
                     </Flex>
                     <Flex flex={1}>
                         <Cascader
-                            placeholder="-- Lọc theo vai trò --"
+                            placeholder="-- Chọn loại tổ chức --"
                             size="large"
                             style={{ width: "100%" }}
                             options={[
-                                { value: 'ADMIN', label: 'Quản trị viên' },
-                                { value: 'INSPECTOR', label: 'Thanh tra / Cán bộ duyệt' },
+                                { value: 'MANUFACTURER', label: 'Nhà sản xuất' },
+                                { value: 'DISTRIBUTOR', label: 'Nhà phân phối' },
+                                { value: 'PHARMACY', label: 'Nhà thuốc / Bán lẻ' },
+                                { value: 'HOSPITAL', label: 'Bệnh viện / Cơ sở y tế' },
                             ]}
-                            onChange={(val) => setQueryParams(prev => ({ ...prev, role: val?.[0] as string, page: 1 }))}
+                            onChange={(val) => setQueryParams(prev => ({ ...prev, orgType: val?.[0] as string, page: 1 }))}
                         />
                     </Flex>
                 </Flex>
             </Flex>
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
-                <EmployeeTable 
-                    dataSource={employees} 
-                    loading={loading} 
+                <CompanyTable 
+                    dataSource={companies}
+                    loading={loading}
                     pagination={{
                         current: queryParams.page,
                         pageSize: queryParams.size,
