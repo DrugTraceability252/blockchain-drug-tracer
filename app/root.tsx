@@ -5,10 +5,14 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
+  useNavigate,
 } from "react-router";
-
+import { ReactKeycloakProvider } from '@react-keycloak/web';
 import type { Route } from "./+types/root";
 import "./app.css";
+import keycloak from "utils/keycloak";
+import { Spin } from "antd";
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -42,8 +46,33 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const handleKeycloakEvent = (event: string) => {
+    if (event === 'onAuthSuccess') {
+      if (location.pathname === '/') {
+        navigate('/dashboard', { replace: true }); 
+      }
+    }
+  };
+
+  return (
+    <ReactKeycloakProvider 
+      authClient={keycloak}
+      initOptions={{ 
+        onLoad: 'login-required',
+        pkceMethod: 'S256',
+        checkLoginIframe: false
+      }}
+      onEvent={handleKeycloakEvent}
+      LoadingComponent={<Spin size="large" tip="Đang xác thực hệ thống..." fullscreen />}
+    >
+      <Outlet />
+    </ReactKeycloakProvider>
+  );
 }
+
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
   let message = "Oops!";

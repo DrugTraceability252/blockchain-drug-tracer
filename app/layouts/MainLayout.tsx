@@ -1,5 +1,5 @@
 import { Outlet, useNavigate } from "react-router";
-import { Button, ConfigProvider, Flex, Layout } from "antd";
+import { Button, ConfigProvider, Flex, Layout, Spin } from "antd";
 import Sidebar from "components/Sidebar/Sidebar";
 import { useAuth } from "auth/useAuth";
 import { antdTheme } from "theme/antd-theme";
@@ -10,22 +10,32 @@ import "components/Header/Header.shared.css";
 import { useMemo, useState, type ReactNode } from "react";
 import { HeaderActionContext } from "contexts/HeaderActionsContext";
 import { ArrowLeftOutlined } from "@ant-design/icons";
+import type { UserRole } from "constants/type";
 
 const { Content, Header: AntdHeader } = Layout;
 
 export default function MainLayout() {
-    const { user } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const [headerActions, setHeaderActions] = useState<ReactNode>(null);
     const contextValue = useMemo(
         () => ({ setHeaderActions }),
         [setHeaderActions]
     );
     const navigate = useNavigate();
+
+    if (!isAuthenticated || !user) {
+        return (
+            <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center' }}>
+                <Spin tip="Đang tải thông tin phân quyền..." />
+            </div>
+        );
+    }
+
     return (
         <ConfigProvider theme={antdTheme}>
             <HeaderActionContext.Provider value={contextValue}>
                 <Layout style={{ minHeight: "100vh" }}>
-                    <Sidebar role={user.role} userName={user.name} />
+                    <Sidebar role={user.role as UserRole} userName={user.name} />
 
                     <Layout style={{ backgroundColor: colors.bgPrimary }}>
                         <Header />
@@ -39,7 +49,7 @@ export default function MainLayout() {
                                             onClick={() => navigate(-1)}
                                             style={{marginBottom: 12}}
                                         />
-                                        <Breadcrumb role={user.role} />
+                                        <Breadcrumb role={user.role as UserRole} />
                                     </Flex>
                                     <Flex>
                                         {headerActions}

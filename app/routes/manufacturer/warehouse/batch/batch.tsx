@@ -1,12 +1,19 @@
 import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { Button, Cascader, Flex, Input, Layout } from "antd";
+import { Button, Cascader, Flex, Input, Layout, message } from "antd";
+import { drugBatchApi } from "api/drugBatchApi";
 import BatchTable from "components/Table/BatchTable";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
 
 export default function ManufacturerWarehouseBatch() {
     const { setHeaderActions } = useHeaderActions();
+    const [batches, setBatches] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(1);
+    const [total, setTotal] = useState(0);
+    const pageSize = 10;
+    
 
     useEffect(() => {
         setHeaderActions(
@@ -21,6 +28,31 @@ export default function ManufacturerWarehouseBatch() {
 
         return () => setHeaderActions(null);
     }, [setHeaderActions]);
+
+    const fetchBatches = async () => {
+        setLoading(true);
+        try {
+            const result = await drugBatchApi.getAll({
+                page: 1,
+                size: 10,
+                orgId: "ORG001", 
+                facilityId: "49228eb3-daed-43a1-adac-e58223f654b6",
+                // qcStatus: "PENDING", 
+            });
+            setBatches(result.data || []);
+            setTotal(result.total || 0);
+        } catch (error) {
+            console.error("Fetch error:", error);
+            message.error("Có lỗi xảy ra khi tải danh sách lô thuốc!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchBatches();
+    }, [page]);
+
     return (
         <>
             <Layout.Header className="headerLayout">
@@ -51,7 +83,13 @@ export default function ManufacturerWarehouseBatch() {
             </Flex>
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
-                <BatchTable />
+                <BatchTable 
+                    dataSource={batches}
+                    loading={loading}
+                    pagination={{ current: page, pageSize: pageSize }}
+                    total={total}
+                    onPageChange={setPage}
+                />
             </Layout.Content>
         </>
     );

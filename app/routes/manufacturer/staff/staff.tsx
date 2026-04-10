@@ -1,12 +1,26 @@
 import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { Button, Cascader, Flex, Input, Layout } from "antd";
+import { Button, Cascader, Flex, Input, Layout, message } from "antd";
+import { employeeApi } from "api/employeeApi";
+import { useAuth } from "auth/useAuth";
 import EmployeeTable from "components/Table/EmployeeTable";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router";
 
 export default function ManufacturerStaff() {
     const { setHeaderActions } = useHeaderActions();
+    const { user } = useAuth();
+    const [employees, setEmployees] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [total, setTotal] = useState(0);
+
+    const [queryParams, setQueryParams] = useState({
+        page: 1,
+        size: 10,
+        search: "",
+        role: undefined
+    });
+    
 
     useEffect(() => {
         setHeaderActions(
@@ -27,6 +41,47 @@ export default function ManufacturerStaff() {
 
         return () => setHeaderActions(null);
     }, [setHeaderActions]);
+
+    const fetchEmployees = useCallback(async () => {
+        if (!user?.orgId) return; 
+        
+        try {
+            setLoading(true);
+            const response = await employeeApi.getAll({
+                orgId: user.orgId, 
+                page: queryParams.page,
+                size: queryParams.size,
+                search: queryParams.search,
+                role: queryParams.role
+            });
+            
+            setEmployees(response.data || []);
+            setTotal(response.total || 0);
+            
+        } catch (error) {
+            console.error("Lỗi khi tải danh sách nhân viên:", error);
+            message.error("Không thể tải danh sách nhân viên");
+        } finally {
+            setLoading(false);
+        }
+    }, [user?.orgId, queryParams]);
+
+    useEffect(() => {
+        fetchEmployees();
+    }, [fetchEmployees]);
+
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQueryParams(prev => ({ ...prev, search: e.target.value, page: 1 }));
+    };
+
+    const handleTableChange = (pagination: any) => {
+        setQueryParams(prev => ({
+            ...prev,
+            page: pagination.current,
+            size: pagination.pageSize,
+        }));
+    };
+
     return (
         <>
             <Layout.Header className="headerLayout">
@@ -57,7 +112,17 @@ export default function ManufacturerStaff() {
             </Flex>
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
-                <EmployeeTable />
+                <EmployeeTable 
+                    dataSource={employees} 
+                    loading={loading} 
+                    pagination={{
+                        current: queryParams.page,
+                        pageSize: queryParams.size,
+                        total: total,
+                        showSizeChanger: true
+                    }}
+                    onChange={handleTableChange}
+                />
             </Layout.Content>
         </>
     );

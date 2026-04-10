@@ -1,7 +1,8 @@
-import { Card, Col, Flex, Row, Typography } from "antd";
+import { Button, Card, Col, Flex, Row, Typography } from "antd";
 import type { Route } from "./+types/home";
 import { BuildOutlined, CarOutlined, ShopOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router";
+import { useKeycloak } from "@react-keycloak/web";
 
 const { Title } = Typography;
 
@@ -13,6 +14,9 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function Home() {
+  const { keycloak, initialized } = useKeycloak();
+
+  if (!initialized) return <div>Đang tải Keycloak...</div>;
   const navigate = useNavigate();
   return (
     <Flex justify="center" align="center">
@@ -62,6 +66,18 @@ export default function Home() {
           </Card>
         </Col>
       </Row>
+
+      <div>
+        {!keycloak.authenticated ? (
+            <Button type="primary" onClick={() => keycloak.login()}>
+                Đăng nhập với Keycloak
+            </Button>
+        ) : (
+            <Button danger onClick={() => keycloak.logout()}>
+                Đăng xuất ({keycloak.tokenParsed?.preferred_username})
+            </Button>
+        )}
+    </div>
     </Flex>
   );
 }

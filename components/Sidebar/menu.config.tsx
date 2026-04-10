@@ -24,7 +24,7 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             icon: <HomeOutlined />,
             children: [
                 {
-                    key: "profile",
+                    key: "drugProfile",
                     label: "Hồ sơ thuốc",
                     path: "/manufacturer/warehouse/profile",
                     children: [
@@ -32,6 +32,11 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                             key: "create",
                             label: "Thêm thuốc",
                             path: "/manufacturer/warehouse/profile/create",
+                        },
+                        {
+                            key: "detail",
+                            label: "Chi tiết hồ sơ thuốc",
+                            path: "/manufacturer/warehouse/profile/:id",
                         },
                     ],
                 },
@@ -49,9 +54,16 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                             key: "detail",
                             label: "Chi tiết lô",
                             path: "/manufacturer/warehouse/batch/:id",
+                            children: [
+                                {   key: "detail",
+                                    label: "Chi tiết hộp thuốc",
+                                    path: "/manufacturer/warehouse/batch/:id/:boxid",
+                                },
+                            ]
                         },
                     ],
                 },
+                
             ],
         },
         {
@@ -66,7 +78,7 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             icon: <TeamOutlined />,
             children: [
                 {
-                    key: "profile",
+                    key: "staffProfile",
                     label: "Danh sách nhân viên",
                     path: "/manufacturer/staff",
                 },
@@ -123,7 +135,7 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             icon: <TeamOutlined />,
             children: [
                 {
-                    key: "profile",
+                    key: "dStaffProfile",
                     label: "Danh sách nhân viên",
                     path: "/distributor/staff",
                 },
@@ -150,30 +162,61 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
     REGULATOR: [
         {
             key: "dashboard",
-            label: "Quản lý công ty",
+            label: "Bảng điều khiển",
             icon: <LayoutOutlined />,
-            path: "/regulator/company",
+            path: "/regulator/dashboard",
         },
         {
-            key: "dashboard",
+            key: "org",
+            label: "Quản lý công ty",
+            icon: <LayoutOutlined />,
+            children: [
+                {
+                    key: "company",
+                    label: "Danh sách công ty",
+                    path: "/regulator/company",
+                    children: [
+                        {
+                            key: "detail",
+                            label: "Chi tiết công ty",
+                            path: "/regulator/company/:id",
+                        },
+                    ]
+                },
+                {
+                    key: "create",
+                    label: "Thêm công ty",
+                    path: "/regulator/company/create",
+                },
+                {
+                    key: "register",
+                    label: "Duyệt hồ sơ",
+                    path: "/regulator/company/register",
+                },
+            ]
+        },
+        {
+            key: "inventory",
             label: "Quản lý hàng hóa",
             icon: <LayoutOutlined />,
             children: [
                 {
-                    key: "profile",
+                    key: "regulatorProfile",
                     label: "Hồ sơ thuốc",
                     path: "/regulator/warehouse/profile",
+                    children: [
+                        {
+                            key: "detail",
+                            label: "chi tiết thuốc",
+                            path: "/regulator/warehouse/profile/:id",
+                        }
+                    ]
                 },
                 {
                     key: "batch",
                     label: "Lô thuốc",
                     path: "/regulator/warehouse/batch",
                     children: [
-                        {
-                            key: "create",
-                            label: "Them lô",
-                            path: "/regulator/warehouse/batch/create",
-                        },
                         {
                             key: "detail",
                             label: "Chi tiết lô",
@@ -184,7 +227,7 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             ]
         },
         {
-            key: "dashboard",
+            key: "staff",
             label: "Quản lý tài khoản",
             icon: <LayoutOutlined />,
             children: [
@@ -195,7 +238,7 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                 },
                 {
                     key: "create",
-                    label: "Them tài khoản",
+                    label: "Thêm tài khoản",
                     path: "/regulator/staff/create",
                 },
                 {

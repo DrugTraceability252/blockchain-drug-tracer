@@ -1,32 +1,72 @@
-import { UploadOutlined } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, Layout, Row, Col, Select, Upload, DatePicker, type DatePickerProps } from "antd";
+import { Button, Form, Input, Layout, Row, Col, Select, message } from "antd";
+import { authApi } from "api/employeeApi";
+import { useAuth } from "auth/useAuth";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
-import { useEffect } from "react";
-
-const { TextArea } = Input;
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 
 export default function ManufacturerWarehouseCreateStaff() {
     const [form] = Form.useForm();
     const { setHeaderActions } = useHeaderActions();
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
 
+    // Gắn nút "Lưu thông tin" lên Header
     useEffect(() => {
         setHeaderActions(
-            <Button type="primary" size="large" onClick={() => form.submit()}>
+            <Button 
+                type="primary" 
+                size="large" 
+                onClick={() => form.submit()}
+                loading={loading}
+            >
                 Lưu thông tin
             </Button>
         );
-
         return () => setHeaderActions(null);
-    }, [setHeaderActions, form]);
+    }, [setHeaderActions, form, loading]);
 
-    const onFinish = (values: any) => {
-        console.log(values);
+    // Xử lý khi submit Form thành công
+    const onFinish = async (values: any) => {
+        if (!user?.orgId) {
+            message.error("Không tìm thấy thông tin tổ chức của bạn!");
+            return;
+        }
+
+        try {
+            setLoading(true);
+            
+            // Tự động build chuỗi group theo chuẩn DTO: ORG_TYPE/ORG_ID/FACILITY_ID/ROLE
+            // Ví dụ: MANUFACTURER/ORG001/FAC001/STAFF
+            const facilityId = user.facilityId || "DEFAULT_FAC"; 
+            const groupString = `${user.role}/${user.orgId}/${facilityId}/${values.role}`;
+
+            // Chuẩn bị payload theo đúng DTO KeycloakUser.java
+            const payload = {
+                username: values.username,
+                password: values.password, // Tạm thời cho phép set pass lúc tạo, thực tế có thể gửi email auto
+                firstName: values.firstName,
+                lastName: values.lastName,
+                email: values.email,
+                phone: values.phone,
+                identityNumber: values.identityNumber,
+                group: groupString, 
+            };
+
+            await authApi.register(payload);
+            message.success("Tạo tài khoản nhân viên thành công!");
+            
+            // Chuyển hướng về lại trang danh sách nhân viên
+            navigate("/manufacturer/staff"); 
+            
+        } catch (error: any) {
+            console.error(error);
+            message.error("Có lỗi xảy ra: " + (error.message || "Vui lòng thử lại"));
+        } finally {
+            setLoading(false);
+        }
     };
-
-    const onChange: DatePickerProps['onChange'] = (date, dateString) => {
-        console.log(date, dateString);
-    };
-
 
     return (
         <Layout.Content className="contentLayoutTableLevel">
@@ -34,58 +74,92 @@ export default function ManufacturerWarehouseCreateStaff() {
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
-                style={{padding: 12}}
+                style={{ padding: 24, background: '#fff', borderRadius: 8 }}
             >
                 <Row gutter={24}>
-                    <Col span={24}>
+                    <Col span={12}>
                         <Form.Item
-                            label="Họ và tên"
-                            name="name"
-                            rules={[{ required: true, message: "Nhập họ và tên" }]}
+                            label="Họ (Last Name)"
+                            name="lastName"
+                            rules={[{ required: true, message: "Vui lòng nhập họ" }]}
                         >
-                            <Input />
+                            <Input placeholder="VD: Nguyễn Văn" size="large" />
+                        </Form.Item>
+                    </Col>
+                    
+                    <Col span={12}>
+                        <Form.Item
+                            label="Tên (First Name)"
+                            name="firstName"
+                            rules={[{ required: true, message: "Vui lòng nhập tên" }]}
+                        >
+                            <Input placeholder="VD: A" size="large" />
                         </Form.Item>
                     </Col>
 
                     <Col span={12}>
                         <Form.Item
-                            label="Số CCCD"
-                            name="CCCD"
-                            rules={[{ required: true, message: "Nhập số CCCD" }]}
+                            label="Tên đăng nhập (Username)"
+                            name="username"
+                            rules={[{ required: true, message: "Vui lòng nhập tên đăng nhập" }]}
                         >
-                            <Input/> 
+                            <Input placeholder="VD: nguyenvana123" size="large" />
                         </Form.Item>
                     </Col>
 
                     <Col span={12}>
                         <Form.Item
-                            label="Ngày tháng năm sinh"
-                            name="birthday"
-                            rules={[{ required: true, message: "Nhập ngày tháng năm sinh" }]}
+                            label="Mật khẩu khởi tạo"
+                            name="password"
+                            rules={[{ required: true, message: "Vui lòng nhập mật khẩu" }]}
                         >
-                            <DatePicker onChange={onChange} style={{ width: '100%', height: '100%'}}/>
+                            <Input.Password placeholder="Nhập mật khẩu cho nhân viên" size="large" />
                         </Form.Item>
                     </Col>
 
-                    <Col span={24}>
+                    <Col span={12}>
                         <Form.Item
-                            label="Tác dụng phụ"
-                            name="sideEffects"
-                            rules={[{ required: true, message: "Nhập tác dụng phụ" }]}
+                            label="Email"
+                            name="email"
+                            rules={[
+                                { required: true, message: "Vui lòng nhập email" },
+                                { type: 'email', message: "Email không đúng định dạng" }
+                            ]}
                         >
-                            <TextArea rows={4} />
+                            <Input placeholder="VD: email@domain.com" size="large" />
                         </Form.Item>
                     </Col>
 
-                    <Col span={24}>
+                    <Col span={12}>
                         <Form.Item
-                            label="Hồ sơ minh chứng"
-                            name="sideEffects"
-                            rules={[{ required: true, message: "Nhập tác dụng phụ" }]}
+                            label="Số điện thoại"
+                            name="phone"
+                            rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
                         >
-                            <Upload>
-                                <Button icon={<UploadOutlined />}>Upload</Button>
-                            </Upload>
+                            <Input placeholder="Nhập số điện thoại liên hệ" size="large" />
+                        </Form.Item>
+                    </Col>
+
+                    <Col span={12}>
+                        <Form.Item
+                            label="Số CCCD / CMND"
+                            name="identityNumber"
+                            rules={[{ required: true, message: "Vui lòng nhập số CCCD" }]}
+                        >
+                            <Input placeholder="Nhập số CCCD" size="large" />
+                        </Form.Item>
+                    </Col>
+
+                    <Col span={12}>
+                        <Form.Item
+                            label="Phân quyền (Vai trò)"
+                            name="role"
+                            rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}
+                        >
+                            <Select size="large" placeholder="Chọn vai trò cho nhân viên">
+                                <Select.Option value="MEMBER">Nhân viên</Select.Option>
+                                <Select.Option value="ADMIN">Quản lý</Select.Option>
+                            </Select>
                         </Form.Item>
                     </Col>
                 </Row>
