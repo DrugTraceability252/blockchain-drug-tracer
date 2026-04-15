@@ -38,19 +38,27 @@ export default function RegulatorDashboard() {
         pendingStaff: 0,
     });
 
+    // 🌟 1. Bóc tách ra các giá trị cơ bản (Boolean và String) ĐỂ TRÁNH LẶP VÔ HẠN
+    const isLoggedIn = !!user; 
+    const currentOrgId = user?.orgId || "";
+
     const fetchDashboardData = useCallback(async () => {
-        if (!user?.orgId) return;
+        // 🌟 2. Kiểm tra bằng biến boolean
+        if (!isLoggedIn) return;
 
         try {
             setLoading(true);
             
             const [orgsRes, drugsRes, batchesRes, staffRes] = await Promise.all([
-                organizationApi.getAll({ page: 1, size: 100 }),
-                drugProfileApi.getAll({ page: 1, size: 100 }),
-                drugBatchApi.getAll({ page: 1, size: 100 }),
-                employeeApi.getAll({ orgId: user.orgId, page: 1, size: 100 })
+                organizationApi.getAll({ page: 0, size: 100 }),
+                drugProfileApi.getAll({ page: 0, size: 100 }),
+                drugBatchApi.getAll({ page: 0, size: 100 }),
+                // 🌟 3. Truyền currentOrgId vào đây
+                employeeApi.getAll({ orgId: currentOrgId, page: 0, size: 100 }) 
             ]);
 
+            // ... (Phần logic tính toán stats giữ nguyên y hệt lúc nãy) ...
+            
             const allOrgs = orgsRes.data || orgsRes.content || [];
             const pendingOrgsCount = allOrgs.filter((o: any) => o.status === "PENDING").length;
 
@@ -86,7 +94,7 @@ export default function RegulatorDashboard() {
         } finally {
             setLoading(false);
         }
-    }, [user?.orgId]);
+    }, [isLoggedIn, currentOrgId]); // 🌟 4. Truyền 2 biến cơ bản này vào mảng
 
     useEffect(() => {
         fetchDashboardData();
@@ -120,10 +128,10 @@ export default function RegulatorDashboard() {
                         </Link>
                     </Col>
                     <Col xs={24} md={12}>
-                        <Link to="/regulator/batch" style={{ display: 'block' }}>
+                        <Link to="/regulator/warehouse/batch" style={{ display: 'block' }}>
                             <SummaryCard
                                 icon={<WarningOutlined />}
-                                value={stats.failedQC < 10 ? `0${stats.failedQC}` : stats.failedQC}
+                                value={stats.failedQC}
                                 label="Lô thuốc vi phạm / Bị thu hồi"
                                 footerText="Xem danh sách cảnh báo"
                                 color="red"
@@ -135,7 +143,7 @@ export default function RegulatorDashboard() {
                 <Row gutter={[16, 16]} style={{ marginTop: 16}}>
                     <Col xs={24} md={12}>
                         <Flex vertical gap={16} style={{ height: "100%" }}>
-                            <Link to="/regulator/companies">
+                            <Link to="/regulator/manufacturer">
                                 <StatCard
                                     title="Mạng lưới Tổ chức tham gia"
                                     items={[
@@ -162,7 +170,7 @@ export default function RegulatorDashboard() {
 
                     <Col xs={24} md={12}>
                         <Flex vertical gap={16} style={{ height: "100%" }}>
-                            <Link to="/regulator/batches">
+                            <Link to="/regulator/warehouse/batch">
                                 <StatCard
                                     title="Giám sát Chuỗi cung ứng"
                                     items={[

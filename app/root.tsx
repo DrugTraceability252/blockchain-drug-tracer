@@ -51,11 +51,33 @@ export default function App() {
 
   const handleKeycloakEvent = (event: string) => {
     if (event === 'onAuthSuccess') {
-      if (location.pathname === '/') {
-        navigate('/dashboard', { replace: true }); 
-      }
+        if (location.pathname === '/') {
+            const tokenParsed = keycloak.tokenParsed; 
+            
+            let targetPath = '';
+
+            if (tokenParsed) {
+                const userGroups = tokenParsed.groups || [];
+                const groupString = userGroups.length > 0 ? userGroups[0].toUpperCase() : "";
+
+                if (groupString.includes("REGULATOR")) {
+                    targetPath = '/regulator/dashboard';
+                } 
+                else if (groupString.includes("MANUFACTURER")) {
+                    targetPath = '/manufacturer/dashboard';
+                } 
+                else if (groupString.includes("DISTRIBUTOR")) {
+                    targetPath = '/distributor/dashboard';
+                }
+                else if (groupString.includes("PHARMACY")) {
+                    targetPath = '/pharmacy/dashboard';
+                }
+            }
+
+            navigate(targetPath, { replace: true }); 
+        }
     }
-  };
+};
 
   return (
     <ReactKeycloakProvider 

@@ -1,12 +1,17 @@
 import { apiClient } from "./apiClient";
 
 export const organizationApi = {
-    getAll: (params: { page: number; size: number; search?: string; orgType?: string }) => {
-        const cleanParams = Object.fromEntries(
-            Object.entries(params).filter(([_, v]) => v != null && v !== "")
-        ) as Record<string, string>;
+    getAll: (params: { page: number; size: number; name?: string; type?: string}) => {
+        const cleanParams: any = {};
         
+        cleanParams.page = params.page.toString();
+        cleanParams.size = params.size.toString();
+        
+        if (params.name) cleanParams.name = params.name;
+        if (params.type) cleanParams.type = params.type;
+
         const queryString = new URLSearchParams(cleanParams).toString();
+        
         return apiClient(`/organizations?${queryString}`, { method: "GET" }); 
     },
 
@@ -28,4 +33,10 @@ export const organizationApi = {
         return apiClient(`/organizations/${orgId}`, { method: "GET" });
     },
     
+    createFacility: (orgId: string, data: any) => {
+        return apiClient(`/organizations/${orgId}/facilities`, {
+            method: "POST",
+            body: JSON.stringify(data),
+        });
+    },
 };

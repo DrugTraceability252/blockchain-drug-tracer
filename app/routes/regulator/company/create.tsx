@@ -1,11 +1,12 @@
 import { InboxOutlined } from "@ant-design/icons";
-import { Button, Col, Flex, Form, Input, Layout, Row, Select, Upload, message } from "antd";
+import { Button, Col, Flex, Form, Input, Layout, Row, Select, Upload, message, Divider, Typography } from "antd";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { organizationApi } from "api/organizationApi";
 
 const { Dragger } = Upload;
+const { Title } = Typography;
 
 export default function RegulatorCompanyCreate() {
     const [form] = Form.useForm();
@@ -30,7 +31,7 @@ export default function RegulatorCompanyCreate() {
     const onFinish = async (values: any) => {
         setLoading(true);
         try {
-            const payload = {
+            const orgPayload = {
                 orgName: values.orgName,
                 orgType: values.orgType,
                 taxCode: values.taxCode,
@@ -38,15 +39,38 @@ export default function RegulatorCompanyCreate() {
                 address: values.address,
                 contactEmail: values.contactEmail,
                 contactPhone: values.contactPhone,
-                documentHashes: ["hash_dummy_1"] // Tạm mock hash, sau này sẽ lấy từ kết quả upload MinIO
+                documentHashes: ["hash_dummy_1"]
             };
 
-            await organizationApi.create(payload);
-            message.success("Đăng ký tổ chức thành công!");
-            navigate("/regulator/companies"); // Quay về trang danh sách
+            const orgResponse = await organizationApi.create(orgPayload);
+            
+            const newOrgId = orgResponse.data?.orgId || orgResponse.orgId;
+
+            if (!newOrgId) {
+                throw new Error("Không lấy được ID tổ chức sau khi tạo!");
+            }
+
+            const facilityPayload = {
+                facilityName: values.facilityName,
+                facilityType: values.facilityType,
+                licenseNumber: values.facilityLicenseNumber,
+                address: values.facilityAddress,
+                contactPhone: values.facilityContactPhone
+            };
+
+            await organizationApi.createFacility(newOrgId, facilityPayload);
+
+            message.success("Đăng ký tổ chức và cơ sở thành công!");
+            if (orgPayload.orgType === "MANUFACTURER") {
+                navigate("/manufacturer/dashboard");
+            } else if (orgPayload.orgType === "DISTRIBUTOR") {
+                navigate("/distributor/dashboard");
+            } else if (orgPayload.orgType === "PHARMACY") {
+                navigate("/pharmacy/dashboard");
+            } 
         } catch (error: any) {
             console.error(error);
-            message.error("Có lỗi xảy ra khi tạo tổ chức!");
+            message.error("Có lỗi xảy ra khi tạo tổ chức hoặc cơ sở!");
         } finally {
             setLoading(false);
         }
@@ -60,23 +84,16 @@ export default function RegulatorCompanyCreate() {
                 onFinish={onFinish}
                 style={{ padding: 24, background: '#fff', borderRadius: 8 }}
             >
+                <Title level={4}>Thông tin pháp lý </Title>
                 <Row gutter={24}>
                     <Col span={16}>
-                        <Form.Item
-                            label="Tên tổ chức / Công ty"
-                            name="orgName"
-                            rules={[{ required: true, message: "Vui lòng nhập tên công ty" }]}
-                        >
+                        <Form.Item label="Tên tổ chức / Công ty" name="orgName" rules={[{ required: true }]}>
                             <Input size="large" placeholder="VD: Công ty TNHH Dược phẩm ABC" />
                         </Form.Item>
                     </Col>
                     
                     <Col span={8}>
-                        <Form.Item
-                            label="Loại hình"
-                            name="orgType"
-                            rules={[{ required: true, message: "Vui lòng chọn loại hình" }]}
-                        >
+                        <Form.Item label="Loại hình" name="orgType" rules={[{ required: true }]}>
                             <Select size="large" placeholder="-- Chọn loại hình --">
                                 <Select.Option value="MANUFACTURER">Nhà sản xuất</Select.Option>
                                 <Select.Option value="DISTRIBUTOR">Nhà phân phối</Select.Option>
@@ -87,64 +104,83 @@ export default function RegulatorCompanyCreate() {
                     </Col>
 
                     <Col span={12}>
-                        <Form.Item
-                            label="Mã số thuế"
-                            name="taxCode"
-                            rules={[{ required: true, message: "Vui lòng nhập mã số thuế" }]}
-                        >
+                        <Form.Item label="Mã số thuế" name="taxCode" rules={[{ required: true }]}>
                             <Input size="large" placeholder="VD: 0100108756" />
                         </Form.Item>
                     </Col>
 
                     <Col span={12}>
-                        <Form.Item
-                            label="Số giấy phép (GCN)"
-                            name="licenseNumber"
-                            rules={[{ required: true, message: "Vui lòng nhập số giấy phép" }]}
-                        >
+                        <Form.Item label="Số giấy phép (GCN)" name="licenseNumber" rules={[{ required: true }]}>
                             <Input size="large" placeholder="VD: GCN-GDP-2025-089" />
                         </Form.Item>
                     </Col>
 
                     <Col span={12}>
-                        <Form.Item
-                            label="Email liên hệ"
-                            name="contactEmail"
-                            rules={[
-                                { required: true, message: "Vui lòng nhập email" },
-                                { type: 'email', message: "Email không đúng định dạng" }
-                            ]}
-                        >
+                        <Form.Item label="Email liên hệ" name="contactEmail" rules={[{ required: true, type: 'email' }]}>
                             <Input size="large" placeholder="VD: contact@company.com" />
                         </Form.Item>
                     </Col>
 
                     <Col span={12}>
-                        <Form.Item
-                            label="Số điện thoại"
-                            name="contactPhone"
-                            rules={[{ required: true, message: "Vui lòng nhập số điện thoại" }]}
-                        >
+                        <Form.Item label="Số điện thoại" name="contactPhone" rules={[{ required: true }]}>
                             <Input size="large" placeholder="VD: 02439364455" />
                         </Form.Item>
                     </Col>
 
                     <Col span={24}>
-                        <Form.Item
-                            label="Địa chỉ trụ sở"
-                            name="address"
-                            rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
-                        >
-                            <Input.TextArea rows={3} size="large" placeholder="Nhập địa chỉ chi tiết..." />
+                        <Form.Item label="Địa chỉ trụ sở" name="address" rules={[{ required: true }]}>
+                            <Input.TextArea rows={2} size="large" placeholder="Nhập địa chỉ chi tiết..." />
+                        </Form.Item>
+                    </Col>
+                </Row>
+
+                <Divider dashed />
+
+                <Title level={4}>Cơ sở đầu tiên</Title>
+                <Row gutter={24}>
+                    <Col span={16}>
+                        <Form.Item label="Tên cơ sở" name="facilityName" rules={[{ required: true, message: "Vui lòng nhập tên cơ sở" }]}>
+                            <Input size="large" placeholder="VD: Nhà máy sản xuất số 1 / Kho tổng miền Nam" />
+                        </Form.Item>
+                    </Col>
+
+                    <Col span={8}>
+                        <Form.Item label="Loại cơ sở" name="facilityType" rules={[{ required: true, message: "Vui lòng chọn loại cơ sở" }]}>
+                            <Select size="large" placeholder="-- Chọn loại --">
+                                <Select.Option value="FACTORY">Nhà máy sản xuất (FACTORY)</Select.Option>
+                                <Select.Option value="WAREHOUSE">Kho bãi (WAREHOUSE)</Select.Option>
+                                <Select.Option value="PHARMACY_STORE">Cửa hàng thuốc (PHARMACY_STORE)</Select.Option>
+                                <Select.Option value="HOSPITAL_DEPT">Kho bệnh viện (HOSPITAL_DEPT)</Select.Option>
+                            </Select>
+                        </Form.Item>
+                    </Col>
+
+                    <Col span={12}>
+                        <Form.Item label="Giấy phép cơ sở (GPP, GSP, GMP...)" name="facilityLicenseNumber" rules={[{ required: true }]}>
+                            <Input size="large" placeholder="VD: GMP-2025-001" />
+                        </Form.Item>
+                    </Col>
+
+                    <Col span={12}>
+                        <Form.Item label="SĐT cơ sở" name="facilityContactPhone" rules={[{ required: true }]}>
+                            <Input size="large" placeholder="SĐT liên lạc trực tiếp tới kho/nhà máy" />
                         </Form.Item>
                     </Col>
 
                     <Col span={24}>
+                        <Form.Item label="Địa chỉ cơ sở (Nơi thực tế chứa hàng)" name="facilityAddress" rules={[{ required: true }]}>
+                            <Input.TextArea rows={2} size="large" placeholder="Địa chỉ kho/nhà máy..." />
+                        </Form.Item>
+                    </Col>
+                </Row>
+
+                <Divider dashed />
+
+                <Row>
+                    <Col span={24}>
                         <Form.Item label="Hồ sơ minh chứng (Giấy phép kinh doanh, GPP, GSP, GMP...)">
                             <Dragger multiple={true} beforeUpload={() => false}>
-                                <p className="ant-upload-drag-icon">
-                                    <InboxOutlined />
-                                </p>
+                                <p className="ant-upload-drag-icon"><InboxOutlined /></p>
                                 <p className="ant-upload-text">Kéo thả hoặc nhấp để tải file PDF/Ảnh lên</p>
                             </Dragger>
                         </Form.Item>

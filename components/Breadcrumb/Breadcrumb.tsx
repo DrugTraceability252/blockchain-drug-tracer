@@ -1,5 +1,5 @@
 import { Breadcrumb as AntBreadcrumb } from "antd";
-import { useLocation, useParams } from "react-router";
+import { useLocation } from "react-router"; // 🌟 Xóa useParams đi vì không cần nữa
 import { menuByRole } from "components/Sidebar/menu.config";
 import type { UserRole } from "constants/type";
 import { buildBreadcrumb } from "utils/breadcrum";
@@ -10,10 +10,23 @@ type Props = {
 };
 
 export default function Breadcrumb({ role }: Props) {
-    const { pathname } = useLocation();
-    const { id } = useParams();
+    const location = useLocation(); 
+    const originalItems = buildBreadcrumb(location.pathname, menuByRole[role]);
 
-    const items = buildBreadcrumb(pathname, menuByRole[role]);
+    const items = originalItems.map((item: any) => {
+        const titleStr = String(item.title || item.label || "");
+        
+        const isID = titleStr.length > 25 && titleStr.includes("-");
+
+        if (isID) {
+            return {
+                ...item,
+                title: location.state?.companyName || "Chi tiết hồ sơ",
+                label: location.state?.companyName || "Chi tiết hồ sơ"
+            };
+        }
+        return item;
+    });
 
     if (items.length === 0) return null;
 

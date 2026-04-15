@@ -48,7 +48,6 @@ export default function Sidebar({ role, userName }: Props) {
             onCollapse={setCollapsed}
             className={styles.sidebar}
         >
-            {/* Logo */}
             <Flex
                 align="center"
                 justify={collapsed ? "center" : "flex-start"}
@@ -63,7 +62,6 @@ export default function Sidebar({ role, userName }: Props) {
                 )}
             </Flex>
 
-            {/* User */}
             <Flex
                 align="center"
                 justify={collapsed ? "center" : "flex-start"}

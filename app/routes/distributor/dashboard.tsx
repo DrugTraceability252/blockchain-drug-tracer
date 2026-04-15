@@ -16,8 +16,9 @@ export default function DistributorDashboard() {
 
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
-        storedBatches: 0,
+        storedBoxes: 0,
         inTransitBatches: 0,
+        storedBatchesCount: 0,
         totalStaff: 0,
         pendingStaff: 0,
         warnings: 0
@@ -36,8 +37,16 @@ export default function DistributorDashboard() {
 
             // Bóc tách Lô thuốc
             const allBatches = batchesRes.data || batchesRes.content || [];
-            // Lô đang lưu trong kho của nhà phân phối
-            const stored = allBatches.filter((b: any) => b.status === "STORED" || b.status === "DISTRIBUTED").length;
+            
+            // Lọc ra các lô đang lưu trong kho của nhà phân phối
+            const storedBatchesList = allBatches.filter((b: any) => b.status === "STORED" || b.status === "DISTRIBUTED");
+            const storedCount = storedBatchesList.length;
+            
+            // 🌟 Tính tổng số lượng hộp thuốc (Boxes) đang nằm trong kho
+            const totalBoxesInStore = storedBatchesList.reduce((sum: number, batch: any) => {
+                return sum + (batch.totalBoxes || 0);
+            }, 0);
+
             // Lô đang vận chuyển (đang giao đến nhà phân phối, hoặc nhà PP đang giao đi)
             const inTransit = allBatches.filter((b: any) => b.status === "IN_TRANSIT").length;
 
@@ -47,7 +56,8 @@ export default function DistributorDashboard() {
             const pendingStaffCount = allStaff.filter((s: any) => s.enabled === false).length;
 
             setStats({
-                storedBatches: stored,
+                storedBoxes: totalBoxesInStore,
+                storedBatchesCount: storedCount,
                 inTransitBatches: inTransit,
                 totalStaff: activeStaffCount,
                 pendingStaff: pendingStaffCount,
@@ -85,8 +95,8 @@ export default function DistributorDashboard() {
                         <Link to="/distributor/warehouse/batch" style={{ display: 'block' }}>
                             <SummaryCard
                                 icon={<InboxOutlined/>}
-                                value={stats.storedBatches}
-                                label="Lô hàng trong kho"
+                                value={stats.storedBoxes} // Hiển thị số lượng HỘP thay vì số Lô
+                                label="Hộp thuốc tồn kho"
                                 footerText="Xem danh sách lô hàng"
                                 color="blue"
                             />
@@ -111,7 +121,7 @@ export default function DistributorDashboard() {
                                     title="Tình trạng Vận chuyển"
                                     items={[
                                         { value: stats.inTransitBatches, label: "Lô thuốc đang trên đường" },
-                                        { value: stats.storedBatches, label: "Lô thuốc đã nhập kho an toàn" },
+                                        { value: stats.storedBatchesCount, label: "Lô thuốc đã nhập kho an toàn" },
                                     ]}
                                 />
                             </Link>
