@@ -34,7 +34,12 @@ export default [
 
     route("regulator/dashboard", "routes/regulator/dashboard.tsx"),
     route("regulator/company", "routes/regulator/company/company.tsx"),
+    route("regulator/manufacturer", "routes/regulator/company/manufacturer.tsx"),
+    route("regulator/distributor", "routes/regulator/company/distributor.tsx"),
+    route("regulator/pharmacy", "routes/regulator/company/pharmacy.tsx"),
+
     route("regulator/company/create", "routes/regulator/company/create.tsx"),
+    route("regulator/facility/create", "routes/regulator/company/facilitycreate.tsx"),
     route("regulator/company/:id", "routes/regulator/company/detail.tsx"),
     route("regulator/company/register", "routes/regulator/company/register.tsx"),
 

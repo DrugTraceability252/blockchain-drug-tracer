@@ -1,10 +1,8 @@
-import { Table, Pagination, Flex, message } from "antd";
+import { Table, Pagination, Flex, message, Form, Select, Modal } from "antd";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { columns } from "./MedicineColumn";
+import { getColumns } from "./MedicineColumn";
 import { drugProfileApi } from "api/drugProfileApi";
-
-const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface MedicineTableProps {
     searchTerm: string;
@@ -18,6 +16,11 @@ export default function MedicineTable({ searchTerm, drugType }
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
     const [loading, setLoading] = useState(false);
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingRecord, setEditingRecord] = useState<any>(null);
+    const [confirmLoading, setConfirmLoading] = useState(false);
+    const [form] = Form.useForm();
     
     const navigate = useNavigate();
     const pageSize = 10;
@@ -43,6 +46,29 @@ export default function MedicineTable({ searchTerm, drugType }
         }
     };
 
+    const handleOpenEditModal = (record: any) => {
+        setEditingRecord(record);
+        form.setFieldsValue({ status: record.approveStatus });
+        setIsModalOpen(true);
+    };
+
+    const handleUpdateStatus = async () => {
+        try {
+            const values = await form.validateFields();
+            setConfirmLoading(true);
+            await drugProfileApi.updateStatus(editingRecord.drugId, values.status);
+            
+            message.success("Cập nhật trạng thái thành công!");
+            setIsModalOpen(false);
+            fetchMedicines(); 
+        } catch (error) {
+            console.error(error);
+            message.error("Lỗi khi cập nhật trạng thái!");
+        } finally {
+            setConfirmLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchMedicines();
     }, [page, drugType, searchTerm]);
@@ -56,7 +82,7 @@ export default function MedicineTable({ searchTerm, drugType }
         <Flex vertical style={{ height: "100%" }}>
             <div style={{ flex: 1, overflow: "hidden" }}>
                 <Table
-                    columns={columns}
+                    columns={getColumns(handleOpenEditModal)}
                     dataSource={data}
                     rowKey={(record) => record.drugId}
                     pagination={false}
@@ -84,6 +110,30 @@ export default function MedicineTable({ searchTerm, drugType }
                     showQuickJumper={false}
                 />
             </Flex>
+
+            <Modal
+                title="Cập nhật trạng thái hồ sơ thuốc"
+                open={isModalOpen}
+                onOk={handleUpdateStatus}
+                confirmLoading={confirmLoading}
+                onCancel={() => setIsModalOpen(false)}
+                okText="Lưu thay đổi"
+                cancelText="Hủy"
+            >
+                <Form form={form} layout="vertical">
+                    <Form.Item 
+                        name="status" 
+                        label="Trạng thái phê duyệt"
+                        rules={[{ required: true, message: 'Vui lòng chọn trạng thái!' }]}
+                    >
+                        <Select size="large">
+                            <Select.Option value="PENDING">Chờ duyệt (PENDING)</Select.Option>
+                            <Select.Option value="APPROVED">Đã duyệt (APPROVED)</Select.Option>
+                            <Select.Option value="REJECTED">Từ chối (REJECTED)</Select.Option>
+                        </Select>
+                    </Form.Item>
+                </Form>
+            </Modal>
         </Flex>
     );
 }

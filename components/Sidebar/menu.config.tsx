@@ -167,14 +167,36 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             path: "/regulator/dashboard",
         },
         {
-            key: "org",
+            key: "create",
+            label: "Đăng ký tổ chức",
+            icon: <LayoutOutlined />,
+            children: [
+                {
+                    key: "createcompany",
+                    label: "Tạo công ty",
+                    path: "/regulator/company/create"
+                },
+                {
+                    key: "createfacility",
+                    label: "Tạo cơ sở",
+                    path: "/regulator/facility/create"
+                },
+                {
+                    key: "registercompany",
+                    label: "Duyệt công ty",
+                    path: "/regulator/company/register"
+                },
+            ]
+        },
+        {
+            key: "manufacturerOrg",
             label: "Quản lý công ty",
             icon: <LayoutOutlined />,
             children: [
                 {
-                    key: "company",
-                    label: "Danh sách công ty",
-                    path: "/regulator/company",
+                    key: "manufacturer",
+                    label: "Nhà sản xuất",
+                    path: "/regulator/manufacturer",
                     children: [
                         {
                             key: "detail",
@@ -184,14 +206,28 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                     ]
                 },
                 {
-                    key: "create",
-                    label: "Thêm công ty",
-                    path: "/regulator/company/create",
+                    key: "distributor",
+                    label: "Nhà phân phối",
+                    path: "/regulator/distributor",
+                    children: [
+                        {
+                            key: "detail",
+                            label: "Chi tiết công ty",
+                            path: "/regulator/company/:id",
+                        },
+                    ]
                 },
                 {
-                    key: "register",
-                    label: "Duyệt hồ sơ",
-                    path: "/regulator/company/register",
+                    key: "pharmacy",
+                    label: "Nhà thuốc",
+                    path: "/regulator/pharmacy",
+                    children: [
+                        {
+                            key: "detail",
+                            label: "Chi tiết công ty",
+                            path: "/regulator/company/:id",
+                        },
+                    ]
                 },
             ]
         },
@@ -237,7 +273,7 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                     path: "/regulator/staff",
                 },
                 {
-                    key: "create",
+                    key: "createstaff",
                     label: "Thêm tài khoản",
                     path: "/regulator/staff/create",
                 },

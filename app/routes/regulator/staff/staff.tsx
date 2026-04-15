@@ -23,12 +23,14 @@ export default function RegulatorStaff() {
     });
 
     const fetchEmployees = useCallback(async () => {
-        if (!user?.orgId) return; 
+        if (!user) return; 
+
         setLoading(true);
         try {
             const response = await employeeApi.getAll({
-                orgId: user.orgId,
-                page: queryParams.page,
+                orgId: user.orgId || "", 
+                
+                page: queryParams.page - 1,
                 size: queryParams.size,
                 search: queryParams.search,
                 role: queryParams.role
@@ -42,7 +44,7 @@ export default function RegulatorStaff() {
         } finally {
             setLoading(false);
         }
-    }, [user?.orgId, queryParams]);
+    }, [queryParams]);
 
     useEffect(() => {
         fetchEmployees();

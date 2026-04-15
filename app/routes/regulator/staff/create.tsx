@@ -15,7 +15,6 @@ export default function RegulatorStaffCreate() {
     
     const [loading, setLoading] = useState(false);
     
-    // State lưu dữ liệu cho dropdown
     const [orgList, setOrgList] = useState<any[]>([]);
     const [facilityList, setFacilityList] = useState<any[]>([]);
     const [loadingOrgs, setLoadingOrgs] = useState(false);
@@ -27,7 +26,7 @@ export default function RegulatorStaffCreate() {
     useEffect(() => {
         if (selectedOrgType && selectedOrgType !== "REGULATOR") {
             setLoadingOrgs(true);
-            organizationApi.getAll({ page: 1, size: 100, orgType: selectedOrgType })
+            organizationApi.getAll({ page: 0, size: 100, type: selectedOrgType })
                 .then(res => setOrgList(res.data || res.content || []))
                 .catch(() => message.error("Lỗi khi tải danh sách tổ chức!"))
                 .finally(() => setLoadingOrgs(false));
@@ -40,7 +39,7 @@ export default function RegulatorStaffCreate() {
     useEffect(() => {
         if (selectedOrgId) {
             setLoadingFacilities(true);
-            facilityApi.getByOrgId(selectedOrgId, { page: 1, size: 100 })
+            facilityApi.getByOrgId(selectedOrgId, { page: 1, size: 100 }) 
                 .then(res => setFacilityList(res.data || res.content || []))
                 .catch(() => message.error("Lỗi khi tải danh sách cơ sở!"))
                 .finally(() => setLoadingFacilities(false));
@@ -63,13 +62,10 @@ export default function RegulatorStaffCreate() {
         try {
             setLoading(true);
             
-            // 🌟 3. Xây dựng chuỗi Group linh hoạt dựa theo Logic của bạn
             let groupString = "";
             if (values.orgType === "REGULATOR") {
-                // Ví dụ: REGULATOR///ADMIN
                 groupString = `REGULATOR///${values.role}`;
             } else {
-                // Ví dụ: MANUFACTURER/ORG123/FAC456/MEMBER
                 groupString = `${values.orgType}/${values.orgId || ''}/${values.facilityId || ''}/${values.role}`;
             }
 
@@ -82,6 +78,7 @@ export default function RegulatorStaffCreate() {
                 phone: values.phone,
                 identityNumber: values.identityNumber,
                 group: groupString, 
+                avatarUrl: "string",
             };
 
             await authApi.register(payload); 
