@@ -4,6 +4,8 @@ import { drugProfileApi } from "api/drugProfileApi";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import dayjs from "dayjs";
+import { useAuth } from "auth/useAuth";
 
 const { TextArea } = Input;
 
@@ -17,6 +19,8 @@ export default function ManufacturerWarehouseCreateProfile() {
     const { setHeaderActions } = useHeaderActions();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+
+    const { user } = useAuth();
 
     useEffect(() => {
         setHeaderActions(
@@ -33,29 +37,30 @@ export default function ManufacturerWarehouseCreateProfile() {
     }, [setHeaderActions, form, loading]);
 
     const onFinish = async (values: any) => {
+        if (!user?.orgId) {
+            message.error("Lỗi: Không tìm thấy mã Tổ chức của bạn. Vui lòng đăng nhập lại!");
+            return;
+        }
+
         setLoading(true);
         try {
-            // Lấy danh sách tên file làm mock documentHashes
             const documentHashes = values.documentHashes?.map((f: any) => f.name) || ["mock_hash_abc123"];
 
-            // 🎯 MAP DỮ LIỆU CHUẨN 100% THEO API BACKEND
             const payload = {
-                drugId: values.drugId,
                 drugName: values.drugName,
-                manufacturerOrgId: "ORG001", // Hardcode tạm thời
+                manufacturerOrgId: user.orgId,
                 licenseNumber: values.licenseNumber,
-                // Chuyển đổi DatePicker (dayjs object) sang chuỗi ISO 8601
-                licenseExpiry: values.licenseExpiry ? values.licenseExpiry.toISOString() : new Date().toISOString(),
+                licenseExpiry: values.licenseExpiry ? dayjs(values.licenseExpiry).toISOString() : null,
                 decisionNumber: values.decisionNumber,
-                approvalYear: values.approvalYear, // Đã là số nguyên (int32)
-                approvalBatch: values.approvalBatch,
+                approvalYear: Number(values.approvalYear),
+                approvalBatch: String(values.approvalBatch),
                 ingredient: values.ingredient,
                 strength: values.strength,
                 drugType: values.drugType,
                 dosageForm: values.dosageForm,
                 packaging: values.packaging,
                 qualityStandard: values.qualityStandard,
-                shelfLife: values.shelfLife,
+                shelfLife: values.shelfLife ? String(values.shelfLife).trim() : "",
                 documentHashes: documentHashes
             };
 
@@ -65,7 +70,7 @@ export default function ManufacturerWarehouseCreateProfile() {
 
         } catch (error) {
             console.error("Lỗi khi tạo hồ sơ thuốc:", error);
-            message.error("Có lỗi xảy ra khi lưu thông tin. Vui lòng kiểm tra lại!");
+            message.error("Có lỗi xảy ra từ máy chủ (500). Vui lòng kiểm tra lại log Backend!");
         } finally {
             setLoading(false);
         }

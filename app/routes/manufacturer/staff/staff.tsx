@@ -1,26 +1,46 @@
 import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Cascader, Flex, Input, Layout, message } from "antd";
-import { employeeApi } from "api/employeeApi";
-import { useAuth } from "auth/useAuth";
 import EmployeeTable from "components/Table/EmployeeTable";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router";
+import { employeeApi } from "api/employeeApi";
+import { useAuth } from "auth/useAuth";
 
-export default function ManufacturerStaff() {
+export default function DistributorStaff() {
     const { setHeaderActions } = useHeaderActions();
     const { user } = useAuth();
+
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(0);
+    const [page, setPage] = useState(1);
+    const pageSize = 10;
 
-    const [queryParams, setQueryParams] = useState({
-        page: 1,
-        size: 10,
-        search: "",
-        role: undefined
-    });
-    
+    const fetchEmployees = useCallback(async () => {
+        if (!user?.orgId) return;
+
+        setLoading(true);
+        try {
+            const response = await employeeApi.getAll({
+                orgId: user.orgId,
+                page: page - 1,
+                size: pageSize,
+            });
+            
+            setEmployees(response.data || response.content || []);
+            setTotal(response.totalElements || response.total || 0);
+        } catch (error) {
+            console.error("Lỗi khi tải danh sách nhân viên:", error);
+            message.error("Không thể tải danh sách nhân viên");
+        } finally {
+            setLoading(false);
+        }
+    }, [user?.orgId, page]);
+
+    useEffect(() => {
+        fetchEmployees();
+    }, [fetchEmployees]);
 
     useEffect(() => {
         setHeaderActions(
@@ -41,47 +61,6 @@ export default function ManufacturerStaff() {
 
         return () => setHeaderActions(null);
     }, [setHeaderActions]);
-
-    const fetchEmployees = useCallback(async () => {
-        if (!user?.orgId) return; 
-        
-        try {
-            setLoading(true);
-            const response = await employeeApi.getAll({
-                orgId: user.orgId, 
-                page: queryParams.page,
-                size: queryParams.size,
-                search: queryParams.search,
-                role: queryParams.role
-            });
-            
-            setEmployees(response.data || []);
-            setTotal(response.total || 0);
-            
-        } catch (error) {
-            console.error("Lỗi khi tải danh sách nhân viên:", error);
-            message.error("Không thể tải danh sách nhân viên");
-        } finally {
-            setLoading(false);
-        }
-    }, [user?.orgId, queryParams]);
-
-    useEffect(() => {
-        fetchEmployees();
-    }, [fetchEmployees]);
-
-    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setQueryParams(prev => ({ ...prev, search: e.target.value, page: 1 }));
-    };
-
-    const handleTableChange = (pagination: any) => {
-        setQueryParams(prev => ({
-            ...prev,
-            page: pagination.current,
-            size: pagination.pageSize,
-        }));
-    };
-
     return (
         <>
             <Layout.Header className="headerLayout">
@@ -113,15 +92,14 @@ export default function ManufacturerStaff() {
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
                 <EmployeeTable 
-                    dataSource={employees} 
-                    loading={loading} 
+                    dataSource={employees}
+                    loading={loading}
                     pagination={{
-                        current: queryParams.page,
-                        pageSize: queryParams.size,
+                        current: page,
+                        pageSize: pageSize,
                         total: total,
-                        showSizeChanger: true
                     }}
-                    onChange={handleTableChange}
+                    onChange={(p) => setPage(p)}
                 />
             </Layout.Content>
         </>

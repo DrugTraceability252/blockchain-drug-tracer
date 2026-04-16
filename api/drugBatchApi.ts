@@ -42,9 +42,15 @@ export const drugBatchApi = {
         return apiClient(`/drug-boxes?${queryString}`, { method: "GET" });
     },
 
-    transferOwnership: (batchId: string, fromFacilityId: string) => {
-        return apiClient(`/batches/${batchId}/transfer?fromFacilityId=${fromFacilityId}`, { 
-            method: "PATCH" 
+    transfer: (batchId: string, fromFacilityId: string) => {
+        return apiClient(`/drug-batches/${batchId}/transfer?fromFacilityId=${fromFacilityId}`, { 
+            method: "POST" 
+        });
+    },
+
+    receive: (batchId: string, toFacilityId: string) => {
+        return apiClient(`/drug-batches/${batchId}/receive?toFacilityId=${toFacilityId}`, { 
+            method: "POST" 
         });
     },
 

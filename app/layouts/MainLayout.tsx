@@ -40,7 +40,7 @@ export default function MainLayout() {
                     <Layout style={{ backgroundColor: colors.bgPrimary }}>
                         <Header />
                         
-                        <Content className="contentLayout" style={{ padding: "24px" }}>
+                        <Content className="contentLayout" style={{ padding: "24px 12px 12px 24px" }}>
                             <AntdHeader className="headerLayout">
                                 <Flex justify="space-between" align="center">
                                     <Flex align="center" gap={12}>

@@ -24,7 +24,6 @@ export default [
     route("manufacturer/staff/register", "routes/manufacturer/staff/register.tsx"),
     route("manufacturer/alerts", "routes/manufacturer/alerts.tsx"),
 
-
     route("distributor/dashboard", "routes/distributor/dashboard.tsx"),
     route("distributor/distribute", "routes/distributor/distribute/distribute.tsx"),
     route("distributor/staff", "routes/distributor/staff/staff.tsx"),
@@ -51,5 +50,12 @@ export default [
     route("regulator/staff", "routes/regulator/staff/staff.tsx"),
     route("regulator/staff/create", "routes/regulator/staff/create.tsx"),
     route("regulator/staff/register", "routes/regulator/staff/register.tsx"),
+
+    route("pharmacy/dashboard", "routes/pharmacy/dashboard.tsx"),
+    route("pharmacy/distribute", "routes/pharmacy/distribute/distribute.tsx"),
+    route("pharmacy/staff", "routes/pharmacy/staff/staff.tsx"),
+    route("pharmacy/staff/create", "routes/pharmacy/staff/create.tsx"),
+    route("pharmacy/staff/register", "routes/pharmacy/staff/register.tsx"),
+    route("pharmacy/distribute/:id", "routes/pharmacy/distribute/detail.tsx"),
   ]),
 ] satisfies RouteConfig;

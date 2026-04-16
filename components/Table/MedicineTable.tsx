@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { getColumns } from "./MedicineColumn";
 import { drugProfileApi } from "api/drugProfileApi";
+import { useAuth } from "auth/useAuth";
 
 interface MedicineTableProps {
     searchTerm: string;
@@ -21,6 +22,7 @@ export default function MedicineTable({ searchTerm, drugType }
     const [editingRecord, setEditingRecord] = useState<any>(null);
     const [confirmLoading, setConfirmLoading] = useState(false);
     const [form] = Form.useForm();
+    const { user } = useAuth();
     
     const navigate = useNavigate();
     const pageSize = 10;
@@ -29,7 +31,7 @@ export default function MedicineTable({ searchTerm, drugType }
         setLoading(true);
         try {
             const result = await drugProfileApi.getAll({
-                manufacturerOrgId: "ORG001",
+                manufacturerOrgId: user?.orgId ?? undefined,
                 page: page,
                 size: pageSize,
                 drugType: drugType

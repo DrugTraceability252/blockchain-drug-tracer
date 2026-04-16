@@ -12,7 +12,7 @@ export default function Header() {
     
     return (
         <AntdHeader className={styles.headerLayout}>
-            <Flex justify="flex-end" align="center" style={{ width: "100%", height: "100%" }}>
+            <Flex justify="flex-end" align="center" style={{ width: "95%"}}>
                 {!keycloak.authenticated ? (
                     <Button type="primary" onClick={() => keycloak.login()}>
                         Đăng nhập với Keycloak

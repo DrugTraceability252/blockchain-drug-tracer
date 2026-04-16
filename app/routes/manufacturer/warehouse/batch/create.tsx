@@ -1,11 +1,14 @@
 import { UploadOutlined } from "@ant-design/icons";
 import { Button, Form, Input, InputNumber, Layout, Row, Col, Select, Card, DatePicker, Upload, message } from "antd";
 import { drugBatchApi } from "api/drugBatchApi";
+import { drugProfileApi } from "api/drugProfileApi";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useAuth } from "auth/useAuth";
+import dayjs from "dayjs";
+import { organizationApi } from "api/organizationApi";
 
-// Hàm xử lý file cho component Upload của Ant Design
 const normFile = (e: any) => {
     if (Array.isArray(e)) return e;
     return e?.fileList;
@@ -16,6 +19,46 @@ export default function ManufacturerWarehouseCreateBatch() {
     const { setHeaderActions } = useHeaderActions();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    
+    const { user } = useAuth();
+    
+    const [drugs, setDrugs] = useState<any[]>([]);
+    const [loadingDrugs, setLoadingDrugs] = useState(false);
+
+    const [facilities, setFacilities] = useState<any[]>([]);
+    const [loadingFacilities, setLoadingFacilities] = useState(false);
+
+    useEffect(() => {
+        const fetchDrugs = async () => {
+            if (!user?.orgId) return;
+            setLoadingDrugs(true);
+            try {
+                const res = await drugProfileApi.getAll({ page: 1, size: 100 });
+                
+                const allDrugs = res.data?.data || res.data || res.content || [];
+                
+                console.log("1. Tổng số thuốc tải về:", allDrugs.length);
+                console.log("2. Mã công ty của tôi (user.orgId):", user.orgId);
+
+                const myDrugs = allDrugs.filter((d: any) => {
+                    const isMyCompany = d.manufacturerOrgId === user.orgId;
+                    const isApproved = d.approveStatus === "APPROVED";
+                    
+                    return isMyCompany && isApproved;
+                });
+
+                console.log("3. Số thuốc thỏa mãn điều kiện vào Dropdown:", myDrugs.length);
+                
+                setDrugs(myDrugs);
+            } catch (error) {
+                console.error("Lỗi lấy danh sách thuốc:", error);
+                message.error("Không thể tải danh sách thuốc!");
+            } finally {
+                setLoadingDrugs(false);
+            }
+        };
+        fetchDrugs();
+    }, [user?.orgId]);
 
     useEffect(() => {
         setHeaderActions(
@@ -28,41 +71,61 @@ export default function ManufacturerWarehouseCreateBatch() {
                 Lưu thông tin Lô
             </Button>
         );
-
         return () => setHeaderActions(null);
     }, [setHeaderActions, form, loading]);
 
     const onFinish = async (values: any) => {
+        if (!user?.orgId) {
+            message.error("Lỗi: Không xác định được mã Công ty. Vui lòng đăng nhập lại!");
+            return;
+        }
+
         setLoading(true);
         try {
             const documentHashes = values.documentHashes?.map((f: any) => f.name) || ["hash_demo_batch"];
 
             const payload = {
-                batchId: values.batchId,
                 drugId: values.drugId,
                 manufacturerFacilityId: values.manufacturerFacilityId,
-                manufacturerOrgId: "ORG001", // Hardcode mã tổ chức (thường lấy từ user đăng nhập)
-                // Chuyển đổi DatePicker sang chuẩn ISO 8601
-                productionDate: values.productionDate ? values.productionDate.toISOString() : new Date().toISOString(),
-                expiryDate: values.expiryDate ? values.expiryDate.toISOString() : new Date().toISOString(),
-                totalBoxes: values.totalBoxes, // int32
+                manufacturerOrgId: user.orgId, 
+                
+                productionDate: values.productionDate ? dayjs(values.productionDate).toISOString() : new Date().toISOString(),
+                expiryDate: values.expiryDate ? dayjs(values.expiryDate).toISOString() : new Date().toISOString(),
+                
+                totalBoxes: Number(values.totalBoxes), 
                 unit: values.unit,
                 documentHashes: documentHashes
             };
 
             await drugBatchApi.create(payload);
-            message.success("Tạo lô thuốc thành công!");
-            
-            // Điều hướng về trang danh sách lô thuốc
+            message.success("Tạo lô thuốc mới thành công!");
             navigate("/manufacturer/warehouse/batch");
 
         } catch (error) {
             console.error("Lỗi khi tạo lô:", error);
-            message.error("Có lỗi xảy ra khi tạo lô thuốc. Vui lòng thử lại!");
+            message.error("Có lỗi xảy ra từ máy chủ (500). Vui lòng kiểm tra lại log Backend!");
         } finally {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        const fetchFacilities = async () => {
+            if (!user?.orgId) return;
+            setLoadingFacilities(true);
+            try {
+                const res = await organizationApi.getFacilities(user.orgId);
+                const data = res.data || res || [];
+                setFacilities(data);
+            } catch (error) {
+                console.error("Lỗi lấy danh sách cơ sở:", error);
+                message.error("Không thể tải danh sách cơ sở sản xuất!");
+            } finally {
+                setLoadingFacilities(false);
+            }
+        };
+        fetchFacilities();
+    }, [user?.orgId]);
 
     return (
         <Layout.Content style={{ padding: '12px'}}>
@@ -72,28 +135,32 @@ export default function ManufacturerWarehouseCreateBatch() {
                 onFinish={onFinish}
             >
                 <Row gutter={[24, 24]}>
-                    {/* BLOCK 1: THÔNG TIN ĐỊNH DANH */}
                     <Col span={24}>
                         <Card title="Thông tin định danh Lô">
                             <div style={{padding: 8}}>
                             <Row gutter={16}>
-                                <Col span={12}>
+                                <Col span={24}>
                                     <Form.Item
-                                        label="Mã Lô (Batch ID)"
-                                        name="batchId"
-                                        rules={[{ required: true, message: "Vui lòng nhập mã lô" }]}
-                                    >
-                                        <Input placeholder="VD: BATCH_HAPA_260301" />
-                                    </Form.Item>
-                                </Col>
-
-                                <Col span={12}>
-                                    <Form.Item
-                                        label="Mã thuốc (Drug ID)"
+                                        label="Sản phẩm Thuốc (Drug)"
                                         name="drugId"
-                                        rules={[{ required: true, message: "Vui lòng nhập ID thuốc" }]}
+                                        rules={[{ required: true, message: "Vui lòng chọn thuốc" }]}
                                     >
-                                        <Input placeholder="VD: DRUG_HAPA_001" />
+                                        <Select
+                                            size="large"
+                                            placeholder="-- Tìm và chọn thuốc muốn sản xuất --"
+                                            loading={loadingDrugs}
+                                            showSearch
+                                            optionFilterProp="children"
+                                            filterOption={(input, option) => 
+                                                String(option?.children ?? '').toLowerCase().includes(input.toLowerCase())
+                                            }
+                                        >
+                                            {drugs.map(drug => (
+                                                <Select.Option key={drug.drugId} value={drug.drugId}>
+                                                    {drug.drugName}
+                                                </Select.Option>
+                                            ))}
+                                        </Select>
                                     </Form.Item>
                                 </Col>
                             </Row>
@@ -101,25 +168,29 @@ export default function ManufacturerWarehouseCreateBatch() {
                         </Card>
                     </Col>
 
-                    {/* BLOCK 2: SẢN XUẤT & THỜI HẠN */}
                     <Col span={24}>
                         <Card title="Thông tin sản xuất">
                             <div style={{padding: 8}}>
                             <Row gutter={16}>
                                 <Col span={12}>
                                     <Form.Item
-                                        label="Cơ sở sản xuất (Facility ID)"
+                                        label="Cơ sở sản xuất (Facility)"
                                         name="manufacturerFacilityId"
-                                        rules={[{ required: true, message: "Vui lòng chọn hoặc nhập cơ sở" }]}
+                                        rules={[{ required: true, message: "Vui lòng chọn cơ sở" }]}
                                     >
-                                        {/* Bạn có thể đổi thành Input nếu chưa có API lấy danh sách cơ sở */}
                                         <Select
-                                            placeholder="Chọn cơ sở sản xuất"
-                                            options={[
-                                                { value: "FAC_HCM_001", label: "Nhà máy Quận 9 (FAC_HCM_001)" },
-                                                { value: "FAC_BD_002", label: "Nhà máy Bình Dương (FAC_BD_002)" },
-                                            ]}
-                                        />
+                                            size="large"
+                                            placeholder="-- Chọn nhà máy/kho sản xuất --"
+                                            loading={loadingFacilities}
+                                            showSearch
+                                            optionFilterProp="children"
+                                        >
+                                            {facilities.map((fac) => (
+                                                <Select.Option key={fac.facilityId} value={fac.facilityId}>
+                                                    {fac.facilityName} ({fac.address})
+                                                </Select.Option>
+                                            ))}
+                                        </Select>
                                     </Form.Item>
                                 </Col>
                                 <Col span={6}>
@@ -128,7 +199,7 @@ export default function ManufacturerWarehouseCreateBatch() {
                                         name="productionDate"
                                         rules={[{ required: true, message: "Chọn ngày sản xuất" }]}
                                     >
-                                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                                        <DatePicker size="large" style={{ width: '100%' }} format="DD/MM/YYYY" />
                                     </Form.Item>
                                 </Col>
                                 <Col span={6}>
@@ -137,7 +208,7 @@ export default function ManufacturerWarehouseCreateBatch() {
                                         name="expiryDate"
                                         rules={[{ required: true, message: "Chọn hạn sử dụng" }]}
                                     >
-                                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                                        <DatePicker size="large" style={{ width: '100%' }} format="DD/MM/YYYY" />
                                     </Form.Item>
                                 </Col>
 
@@ -147,7 +218,7 @@ export default function ManufacturerWarehouseCreateBatch() {
                                         name="totalBoxes"
                                         rules={[{ required: true, message: "Nhập số lượng" }]}
                                     >
-                                        <InputNumber style={{ width: "100%" }} min={1} placeholder="VD: 50000" />
+                                        <InputNumber size="large" style={{ width: "100%" }} min={1} placeholder="VD: 50000" />
                                     </Form.Item>
                                 </Col>
 
@@ -159,6 +230,7 @@ export default function ManufacturerWarehouseCreateBatch() {
                                         rules={[{ required: true, message: "Chọn đơn vị" }]}
                                     >
                                         <Select
+                                            size="large"
                                             options={[
                                                 { value: "Hộp", label: "Hộp" },
                                                 { value: "Vỉ", label: "Vỉ" },
@@ -173,13 +245,10 @@ export default function ManufacturerWarehouseCreateBatch() {
                         </Card>
                     </Col>
 
-                    {/* BLOCK 3: SỐ LƯỢNG & TÀI LIỆU */}
                     <Col span={24}>
                         <Card title="Minh chứng">
                             <div style={{padding: 8}}>
                             <Row gutter={16}>
-                                
-
                                 <Col span={24}>
                                     <Form.Item
                                         label="Hồ sơ kiểm nghiệm lô (QC Documents)"
@@ -188,7 +257,7 @@ export default function ManufacturerWarehouseCreateBatch() {
                                         getValueFromEvent={normFile}
                                     >
                                         <Upload name="file" beforeUpload={() => false} multiple>
-                                            <Button icon={<UploadOutlined />}>Tải lên PDF/Hình ảnh</Button>
+                                            <Button size="large" icon={<UploadOutlined />}>Tải lên PDF/Hình ảnh</Button>
                                         </Upload>
                                     </Form.Item>
                                 </Col>

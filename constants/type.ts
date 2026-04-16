@@ -1,5 +1,5 @@
 export type UserRole =
-  | "ADMIN"
+  | "PHARMACY"
   | "MANUFACTURER"
   | "DISTRIBUTOR"
   | "REGULATOR";

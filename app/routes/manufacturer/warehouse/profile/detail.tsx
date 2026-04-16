@@ -1,52 +1,79 @@
-import { Card, Col, Flex, Row, Table, Tag, Typography, Button, Spin } from "antd";
+import { Col, Flex, Row, Tag, Typography, Button, Spin, message } from "antd";
 import { drugProfileApi } from "api/drugProfileApi";
+import { organizationApi } from "api/organizationApi";
+import { drugBatchApi } from "api/drugBatchApi";
 import BorderCard from "components/Card/BorderCard";
 import BatchTable from "components/Table/BatchTable";
 import { useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router";
+import dayjs from "dayjs";
+import { useAuth } from "auth/useAuth";
 
 const { Title, Text } = Typography;
 
 export default function MedicineDetail() {
     const { drugId } = useParams<{ drugId: string }>();
     const location = useLocation();
+    
     const [loading, setLoading] = useState(true);
     const [medicineDetail, setMedicineDetail] = useState<any>(location.state || null);
-
-    const batchData = [
-        { key: '1', batchId: 'L7547U747289193', quantity: 200, date: '10/10/2025', status: 'PRODUCED' },
-        { key: '2', batchId: 'L728UY34823899', quantity: 300, date: '15/09/2025', status: 'IN_TRANSIT' },
-    ];
+    
+    const [orgName, setOrgName] = useState<string>("Đang tải dữ liệu...");
+    const [batches, setBatches] = useState<any[]>([]);
+    const [loadingBatches, setLoadingBatches] = useState(false);
 
     const batchColumns = [
-        { title: 'Mã lô', dataIndex: 'batchId', key: 'batchId' },
-        { title: 'Số lượng hộp', dataIndex: 'quantity', key: 'quantity' },
-        { title: 'Ngày tạo', dataIndex: 'date', key: 'date' },
+        { title: 'Mã lô', dataIndex: 'batchId', key: 'batchId', render: (text: string) => <Text strong>{text}</Text> },
+        { title: 'Số lượng hộp', dataIndex: 'totalBoxes', key: 'totalBoxes' },
+        { 
+            title: 'Ngày sản xuất', 
+            dataIndex: 'productionDate', 
+            key: 'productionDate',
+            render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY') : '—'
+        },
+        { 
+            title: 'Hạn sử dụng', 
+            dataIndex: 'expiryDate', 
+            key: 'expiryDate',
+            render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY') : '—'
+        },
+        {
+            title: 'Kiểm định (QC)',
+            dataIndex: 'qcStatus',
+            key: 'qcStatus',
+            render: (status: string) => {
+                if (status === 'PASSED') return <Tag color="success">Đạt chuẩn</Tag>;
+                if (status === 'FAILED') return <Tag color="error">Không đạt</Tag>;
+                return <Tag color="warning">Chờ kiểm định</Tag>;
+            }
+        },
         { 
             title: 'Trạng thái', 
             dataIndex: 'status', 
             key: 'status',
             render: (status: string) => {
-                if (status === 'PRODUCED') return <Tag color="gold">Sản xuất</Tag>;
-                if (status === 'IN_TRANSIT') return <Tag color="green">Vận chuyển</Tag>;
-                return <Tag>{status}</Tag>;
+                const statusMap: Record<string, { color: string, label: string }> = {
+                    PRODUCED: { color: "gold", label: "Vừa sản xuất" },
+                    IN_TRANSIT: { color: "blue", label: "Đang vận chuyển" },
+                    STORED: { color: "green", label: "Đang lưu kho" },
+                    DISTRIBUTED: { color: "cyan", label: "Đã phân phối" },
+                    RECALLED: { color: "red", label: "Bị thu hồi" }
+                };
+                const config = statusMap[status] || { color: "default", label: status };
+                return <Tag color={config.color}>{config.label}</Tag>;
             }
         },
         {
             title: 'Hành động',
             key: 'action',
-            render: () => <Button type="link">Xem chi tiết »</Button>,
+            render: (_: any, record: any) => <Button type="link" size="small">Xem chi tiết »</Button>,
         },
     ];
 
-    useEffect(() => {
-        const fetchDetail = async () => {
-            
-            if (location.state && location.state.drugId === drugId) {
-                setLoading(false);
-                return;
-            }
+    const { user } = useAuth(); 
 
+    useEffect(() => {
+        const fetchAllData = async () => {
             if (!drugId) {
                 setLoading(false);
                 return;
@@ -54,22 +81,74 @@ export default function MedicineDetail() {
 
             try {
                 setLoading(true);
-                const data = await drugProfileApi.getById(drugId);
-                setMedicineDetail(data);
+                let currentDetail = medicineDetail;
+
+                if (!currentDetail || currentDetail.drugId !== drugId) {
+                    currentDetail = await drugProfileApi.getById(drugId);
+                    setMedicineDetail(currentDetail);
+                }
+
+                if (currentDetail && currentDetail.manufacturerOrgId) {
+                    setLoadingBatches(true);
+                    
+                    const fetchOrgName = async () => {
+                       
+                        if (currentDetail.manufacturerOrgId === user?.orgId) {
+                            setOrgName(user?.orgId|| "Tổ chức của bạn (My Company)");
+                            return;
+                        }
+
+                        try {
+                            if (typeof organizationApi.getById !== 'function') {
+                                setOrgName(currentDetail.manufacturerOrgId); 
+                                return;
+                            }
+                            const orgRes = await organizationApi.getById(currentDetail.manufacturerOrgId);
+                            setOrgName(orgRes.data?.orgName || orgRes.orgName || currentDetail.manufacturerOrgId);
+                        } catch (error) {
+                            console.error("Lỗi API lấy tên công ty:", error);
+                            setOrgName(currentDetail.manufacturerOrgId);
+                        }
+                    };
+
+                    const fetchBatches = async () => {
+                        try {
+                            const batchesRes = await drugBatchApi.getAll({ 
+                                orgId: currentDetail.manufacturerOrgId, 
+                                page: 0, 
+                                size: 100 
+                            });
+                            const allBatches = batchesRes.data || batchesRes.content || [];
+                            
+                            const relatedBatches = allBatches.filter((b: any) => b.drugId === drugId);
+                            setBatches(relatedBatches);
+                        } catch (error) {
+                            console.error("Lỗi tải lô thuốc:", error);
+                            setBatches([]);
+                        }
+                    };
+
+                    await Promise.all([fetchOrgName(), fetchBatches()]);
+                } else {
+                    setOrgName("Không có thông tin Nhà sản xuất");
+                }
             } catch (error) {
-                console.error("Lỗi lấy chi tiết thuốc:", error);
+                console.error("Lỗi lấy dữ liệu chi tiết tổng:", error);
+                message.error("Không thể tải toàn bộ thông tin. Vui lòng thử lại!");
+                setOrgName(medicineDetail?.manufacturerOrgId || "Lỗi tải dữ liệu");
             } finally {
                 setLoading(false);
+                setLoadingBatches(false);
             }
         };
 
-        fetchDetail();
-    }, [drugId]);
+        fetchAllData();
+    }, [drugId, user]);
 
     if (loading) {
         return (
             <Flex justify="center" align="center" style={{ height: '100vh' }}>
-                <Spin size="large" />
+                <Spin size="large" tip="Đang truy xuất dữ liệu từ Blockchain..." />
             </Flex>
         );
     }
@@ -83,23 +162,43 @@ export default function MedicineDetail() {
 
             <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
                 <Col span={14}>
-                    <BorderCard title="Nhà sản xuất" >
+                    <BorderCard title="Nhà sản xuất">
                         <Flex justify="space-between" align="center" style={{ padding: 16 }}>
-                            <Text>{medicineDetail.manufacturerOrgId}</Text>
+                            <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{orgName}</Text>
                             <Button type="link">Xem chi tiết »</Button>
                         </Flex>
                     </BorderCard>
                 </Col>
                 <Col span={10}>
                     <BorderCard>
-                        <Flex style={{ height: '100%' }}>
-                            <div style={{ flex: 1, borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '16px 0', color: medicineDetail.approveStatus === 'PENDING' ? '#1890ff' : '#000' }}>
+                        <Flex style={{ height: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid #d9d9d9' }}>
+                            <div style={{ 
+                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0',
+                                backgroundColor: medicineDetail.status === 'PENDING' ? '#1890ff' : '#f5f5f5', 
+                                color: medicineDetail.status === 'PENDING' ? '#fff' : '#bfbfbf', 
+                                fontWeight: medicineDetail.status === 'PENDING' ? 'bold' : 'normal',
+                                borderRight: '1px solid #d9d9d9',
+                                transition: 'all 0.3s ease'
+                            }}>
                                 Chờ duyệt
                             </div>
-                            <div style={{ flex: 1, borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '16px 0', backgroundColor: medicineDetail.approveStatus === 'APPROVED' ? '#0050b3' : 'transparent', color: medicineDetail.approveStatus === 'APPROVED' ? '#fff' : '#000' }}>
+                            <div style={{ 
+                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0',
+                                backgroundColor: medicineDetail.status === 'ACTIVE' ? '#52c41a' : '#f5f5f5', 
+                                color: medicineDetail.status === 'ACTIVE' ? '#fff' : '#bfbfbf', 
+                                fontWeight: medicineDetail.status === 'ACTIVE' ? 'bold' : 'normal',
+                                borderRight: '1px solid #d9d9d9',
+                                transition: 'all 0.3s ease'
+                            }}>
                                 Đã duyệt
                             </div>
-                            <div style={{ flex: 1, textAlign: 'center', padding: '16px 0', color: medicineDetail.approveStatus === 'REJECTED' ? 'red' : '#000' }}>
+                            <div style={{ 
+                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0',
+                                backgroundColor: medicineDetail.status === 'REJECTED' ? '#ff4d4f' : '#f5f5f5', 
+                                color: medicineDetail.status === 'REJECTED' ? '#fff' : '#bfbfbf', 
+                                fontWeight: medicineDetail.status === 'REJECTED' ? 'bold' : 'normal',
+                                transition: 'all 0.3s ease'
+                            }}>
                                 Từ chối
                             </div>
                         </Flex>
@@ -107,37 +206,37 @@ export default function MedicineDetail() {
                 </Col>
             </Row>
 
-            
             <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
                 <Col span={14}>
-                    <BorderCard title="Thông tin">
+                    <BorderCard title="Thông tin tổng quan">
                         <Row style={{ padding: 16 }}>
                             <Col span={8}>
-                                <Title level={4} style={{ margin: 0 }}>{medicineDetail.drugId}</Title>
-                                <Text type="secondary">ID thuốc</Text>
-                            </Col>
-                            <Col span={8}>
-                                <Title level={4} style={{ margin: 0 }}>{medicineDetail.drugType}</Title>
+                                <Title level={4} style={{ margin: 0 }}>{medicineDetail.drugType || '—'}</Title>
                                 <Text type="secondary">Nhóm thuốc</Text>
                             </Col>
                             <Col span={8}>
-                                <Title level={4} style={{ margin: 0 }}>7000 hộp</Title>
-                                <Text type="secondary">Đã xuất kho</Text>
+                                <Title level={4} style={{ margin: 0 }}>{batches.length}</Title>
+                                <Text type="secondary">Tổng số lô đã sản xuất</Text>
                             </Col>
                         </Row>
                     </BorderCard>
                     
-                    <BorderCard title="Tác dụng phụ" style={{ marginTop: 16 }}>
-                        <Flex style={{ padding: 16 }}>
-                            <Text>{medicineDetail.sideEffects}</Text>
+                    <BorderCard title="Quy cách đóng gói & Bảo quản" style={{ marginTop: 16 }}>
+                        <Flex vertical gap={8} style={{ padding: 16 }}>
+                            <Text><b>Quy cách:</b> {medicineDetail.packaging || '—'}</Text>
+                            <Text><b>Tiêu chuẩn:</b> {medicineDetail.qualityStandard || '—'}</Text>
+                            <Text><b>Hạn sử dụng:</b> {medicineDetail.shelfLife ? `${medicineDetail.shelfLife} tháng` : '—'}</Text>
                         </Flex>
                     </BorderCard>
                 </Col>
 
                 <Col span={10}>
-                    <BorderCard title="Hướng dẫn sử dụng" style={{ height: '100%' }}>
-                        <Flex style={{ padding: 16 }}>
-                            <Text>Sử dụng bằng đường: {medicineDetail.dosageForm}</Text>
+                    <BorderCard title="Thông tin pháp lý" style={{ height: '100%' }}>
+                        <Flex vertical gap={12} style={{ padding: 16 }}>
+                            <Text><b>Dạng bào chế:</b> <Tag color="blue">{medicineDetail.dosageForm || '—'}</Tag></Text>
+                            <Text><b>Số đăng ký:</b> {medicineDetail.licenseNumber || '—'}</Text>
+                            <Text><b>Quyết định số:</b> {medicineDetail.decisionNumber || '—'}</Text>
+                            <Text><b>Ngày hết hạn giấy phép:</b> {medicineDetail.licenseExpiry ? dayjs(medicineDetail.licenseExpiry).format('DD/MM/YYYY') : '—'}</Text>
                         </Flex>
                     </BorderCard>
                 </Col>
@@ -145,19 +244,21 @@ export default function MedicineDetail() {
 
             <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
                 <Col span={24}>
-                     <BorderCard title="Thành phần">
-                        <Flex justify="space-between" style={{ padding: 16 }}>
-                            <Text>{medicineDetail.ingredient}</Text>
-                            <Text strong>{medicineDetail.strength}</Text>
+                     <BorderCard title="Thành phần chính">
+                        <Flex justify="space-between" style={{ padding: 16, backgroundColor: '#fafafa', borderRadius: 8 }}>
+                            <Text style={{ fontSize: 16 }}>{medicineDetail.ingredient || 'Chưa cập nhật thành phần'}</Text>
+                            <Text strong style={{ fontSize: 16, color: '#cf1322' }}>{medicineDetail.strength}</Text>
                         </Flex>
                     </BorderCard>
                 </Col>
             </Row>
 
-            <BorderCard title="Lô hàng">
+            <BorderCard title="Lịch sử Lô hàng">
                 <BatchTable  
-                    dataSource={batchData}
+                    dataSource={batches}
                     columns={batchColumns}
+                    loading={loadingBatches}
+                    rowKey="batchId"
                 />
             </BorderCard>
         </div>

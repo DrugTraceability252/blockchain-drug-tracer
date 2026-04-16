@@ -1,9 +1,10 @@
 import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
 import { Button, Cascader, Flex, Input, Layout, message } from "antd";
 import { drugBatchApi } from "api/drugBatchApi";
+import { useAuth } from "auth/useAuth";
 import BatchTable from "components/Table/BatchTable";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { Link } from "react-router";
 
 export default function ManufacturerWarehouseBatch() {
@@ -14,6 +15,7 @@ export default function ManufacturerWarehouseBatch() {
     const [total, setTotal] = useState(0);
     const pageSize = 10;
     
+    const { user } = useAuth();
 
     useEffect(() => {
         setHeaderActions(
@@ -35,9 +37,7 @@ export default function ManufacturerWarehouseBatch() {
             const result = await drugBatchApi.getAll({
                 page: 1,
                 size: 10,
-                orgId: "ORG001", 
-                facilityId: "49228eb3-daed-43a1-adac-e58223f654b6",
-                // qcStatus: "PENDING", 
+                orgId: user?.orgId ?? undefined,
             });
             setBatches(result.data || []);
             setTotal(result.total || 0);

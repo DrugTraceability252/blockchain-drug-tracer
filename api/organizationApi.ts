@@ -39,4 +39,6 @@ export const organizationApi = {
             body: JSON.stringify(data),
         });
     },
+
+    getFacilities: (orgId: string) => apiClient(`/organizations/${orgId}/facilities`, { method: "GET" }),
 };

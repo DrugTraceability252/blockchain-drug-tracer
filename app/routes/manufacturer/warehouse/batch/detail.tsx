@@ -1,5 +1,7 @@
-import { Card, Layout, Row, Col, Table, Tag, Button, Flex, message, Modal, Spin } from "antd";
+import { Card, Layout, Row, Col, Table, Tag, Button, Flex, message, Modal, Spin, Typography, Image } from "antd";
 import { drugBatchApi } from "api/drugBatchApi";
+import { drugProfileApi } from "api/drugProfileApi"; 
+import { organizationApi } from "api/organizationApi"; 
 import { InfoRow } from "components/InfoRow/InfoRow";
 import SupplyChainStep from "components/SupplyChainStep/SupplyChainStep";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
@@ -7,6 +9,11 @@ import { useEffect, useState, useMemo, useCallback } from "react";
 import { Link, useParams } from "react-router";
 import dayjs from "dayjs";
 import { useAuth } from "auth/useAuth";
+import { QRCodeCell } from "components/QRCodeCall/QRCodeCall";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+
+const { Text } = Typography;
 
 const boxStatusMap: Record<string, { color: string; label: string }> = {
     PRODUCED: { color: "gold", label: "Đã sản xuất" },
@@ -36,6 +43,8 @@ export default function BatchDetail() {
     const [boxes, setBoxes] = useState([]);
     
     const [batchDetail, setBatchDetail] = useState<any>(null);
+    const [drugName, setDrugName] = useState<string>("Đang tải...");
+    const [facilityName, setFacilityName] = useState<string>("Đang tải...");
 
     const fetchBatchDetail = useCallback(async () => {
         try {
@@ -70,6 +79,38 @@ export default function BatchDetail() {
         }
     }, [id, fetchBatchDetail, fetchBox]);
 
+    useEffect(() => {
+        if (batchDetail) {
+            const fetchDrugName = async () => {
+                try {
+                    const res = await drugProfileApi.getById(batchDetail.drugId);
+                    const name = res.data?.drugName || res.drugName;
+                    setDrugName(name || batchDetail.drugId);
+                } catch (error) {
+                    setDrugName(batchDetail.drugId);
+                }
+            };
+
+            const fetchFacilityName = async () => {
+                if (!batchDetail.manufacturerOrgId) {
+                    setFacilityName(batchDetail.manufacturerFacilityId);
+                    return;
+                }
+                try {
+                    const res = await organizationApi.getFacilities(batchDetail.manufacturerOrgId);
+                    const facilities = res.data || res || [];
+                    const found = facilities.find((f: any) => f.facilityId === batchDetail.manufacturerFacilityId);
+                    setFacilityName(found ? found.facilityName : batchDetail.manufacturerFacilityId);
+                } catch (error) {
+                    setFacilityName(batchDetail.manufacturerFacilityId);
+                }
+            };
+
+            fetchDrugName();
+            fetchFacilityName();
+        }
+    }, [batchDetail]);
+
     const handleTransferBatch = async () => {
         if (!user?.facilityId) {
             message.error("Không tìm thấy mã cơ sở của bạn để xuất kho!");
@@ -78,14 +119,14 @@ export default function BatchDetail() {
 
         setTransferring(true);
         try {
-            await drugBatchApi.transferOwnership(id!, user.facilityId);
-            message.success("Xuất lô thuốc thành công! Trạng thái đã chuyển sang Vận chuyển.");
+            await drugBatchApi.transfer(id!, user.facilityId);
             
+            message.success("Xuất lô thuốc thành công! Trạng thái đã chuyển sang Đang vận chuyển.");
             fetchBatchDetail();
             fetchBox();
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            message.error("Có lỗi xảy ra khi xuất lô thuốc!");
+            message.error("Có lỗi xảy ra khi xuất lô thuốc! (Vui lòng kiểm tra log Backend)");
         } finally {
             setTransferring(false);
         }
@@ -93,13 +134,18 @@ export default function BatchDetail() {
 
     const showTransferConfirm = useCallback(() => {
         Modal.confirm({
-            title: 'Xác nhận xuất lô thuốc',
-            content: 'Bạn có chắc chắn muốn xuất lô thuốc này khỏi cơ sở hiện tại để bàn giao cho đơn vị vận chuyển không?',
+            title: 'Xác nhận xuất kho',
+            content: (
+                <div>
+                    <p>Bạn đang tiến hành xuất lô thuốc <b>{id}</b> ra khỏi kho để bàn giao vận chuyển.</p>
+                    <p style={{ color: 'red' }}>Hành động này sẽ được ghi nhận lên Blockchain và không thể hoàn tác!</p>
+                </div>
+            ),
             okText: 'Xác nhận xuất',
             cancelText: 'Hủy bỏ',
             onOk: handleTransferBatch,
         });
-    }, [handleTransferBatch]);
+    }, [handleTransferBatch, id]);
 
     useEffect(() => {
         const canTransfer = batchDetail?.status === "PRODUCED" || batchDetail?.status === "STORED";
@@ -123,6 +169,13 @@ export default function BatchDetail() {
             title: "Mã hộp", 
             dataIndex: "boxId",
             key: "boxId",
+            render: (boxId: string) => (
+                <QRCodeCell 
+                    batchId={id || ""}
+                    boxId={boxId} 
+                    baseUrl={API_BASE_URL} 
+                />
+            )
         },
         {
             title: "Trạng thái",
@@ -167,20 +220,42 @@ export default function BatchDetail() {
                 <Row gutter={24} style={{ width: "100%" }}>
                     <Col span={10}>
                         <Card title="Thông tin lô thuốc">
-                            <InfoRow label="Mã lô" value={batchDetail.batchId} />
-                            
+                            <InfoRow 
+                                label="Mã QR Lô" 
+                                value={(
+                                    <div style={{ marginTop: '-8px' }}>
+                                        <Image
+                                            width={100}
+                                            height={100}
+                                            src={`${API_BASE_URL}/files/preview?objectName=${`qrcode/${batchDetail.batchId}/batch.jpg`}`}
+                                            fallback="https://via.placeholder.com/100?text=No+QR"
+                                        />
+                                    </div>
+                                ) as any} 
+                            />
                             <InfoRow
                                 label="Trạng thái"
                                 value={(<Tag color={batchStatusMap[batchDetail.status]?.color || "default"}>
                                     {batchStatusMap[batchDetail.status]?.label || batchDetail.status}
                                 </Tag>) as any}
                             />
-                            
-                            <InfoRow label="Mã thuốc" value={batchDetail.drugId} />
-                            <InfoRow label="Cơ sở sản xuất" value={batchDetail.manufacturerFacilityId} />
-                            
+                            <InfoRow 
+                                label="Sản phẩm" 
+                                value={(
+                                    <span>
+                                        <Text strong style={{ color: '#1677ff' }}>{drugName}</Text>
+                                    </span>
+                                ) as any} 
+                            />
+                            <InfoRow 
+                                label="Cơ sở sản xuất" 
+                                value={(
+                                    <span>
+                                        <Text strong>{facilityName}</Text>
+                                    </span>
+                                ) as any} 
+                            />
                             <InfoRow label="Số hộp" value={`${batchDetail.totalBoxes || boxes.length} hộp`} />
-                            
                             <InfoRow label="Ngày sản xuất" value={batchDetail.productionDate ? dayjs(batchDetail.productionDate).format("DD/MM/YYYY") : "N/A"} />
                             <InfoRow label="Hạn sử dụng" value={batchDetail.expiryDate ? dayjs(batchDetail.expiryDate).format("DD/MM/YYYY") : "N/A"} />
                         </Card>
@@ -192,7 +267,7 @@ export default function BatchDetail() {
                                 columns={columns}
                                 dataSource={boxes}
                                 loading={loading}
-                                pagination={{ pageSize: 4 }}
+                                pagination={{ pageSize: 2 }}
                                 rowKey="boxId"
                             />
                         </Card>

@@ -70,15 +70,6 @@ export const getColumns = (onEditClick: (record: Medicine) => void): ColumnsType
                 </RouterLink>
             </Tooltip>
 
-            <Tooltip title="Cập nhật trạng thái">
-                <Button 
-                    type="text" 
-                    icon={<EditOutlined />} 
-                    style={{ color: '#faad14' }} 
-                    onClick={() => onEditClick(record)} 
-                />
-            </Tooltip>
-
             <Tooltip title="Xóa">
                 <Button type="text" danger icon={<DeleteOutlined />} onClick={() => console.log("Xóa", record.drugId)} />
             </Tooltip>
