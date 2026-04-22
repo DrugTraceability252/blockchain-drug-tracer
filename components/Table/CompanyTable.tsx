@@ -129,6 +129,7 @@ export default function CompanyTable({ dataSource, loading, pagination, onChange
                 pagination={pagination}
                 onChange={onChange}
                 rowKey="orgId"
+                scroll={{ x: 1000 }}
             />
 
             <Modal
@@ -148,7 +149,7 @@ export default function CompanyTable({ dataSource, loading, pagination, onChange
                 {selectedOrg && (
                     <Descriptions 
                         bordered 
-                        column={2} 
+                        column={{ xs: 1, sm: 2 }} 
                         size="small" 
                         style={{ marginTop: 16 }}
                         labelStyle={{ fontWeight: 600, width: '140px', backgroundColor: '#f5f5f5' }}

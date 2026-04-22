@@ -258,6 +258,11 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                             label: "Chi tiết lô",
                             path: "/regulator/warehouse/batch/:id",
                         },
+                        {
+                            key: "register",
+                            label: "Duyệt lô",
+                            path: "/regulator/warehouse/batch/:id/register",
+                        }
                     ],
                 },
             ]

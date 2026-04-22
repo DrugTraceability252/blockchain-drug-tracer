@@ -77,7 +77,7 @@ export default function DistributorWarehouseCreateStaff() {
                 style={{ padding: 24, background: '#fff', borderRadius: 8 }}
             >
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Họ (Last Name)"
                             name="lastName"
@@ -87,7 +87,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
                     
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Tên (First Name)"
                             name="firstName"
@@ -97,7 +97,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Tên đăng nhập (Username)"
                             name="username"
@@ -107,7 +107,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Mật khẩu khởi tạo"
                             name="password"
@@ -117,7 +117,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Email"
                             name="email"
@@ -130,7 +130,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Số điện thoại"
                             name="phone"
@@ -140,7 +140,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Số CCCD / CMND"
                             name="identityNumber"
@@ -150,7 +150,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Phân quyền (Vai trò)"
                             name="role"

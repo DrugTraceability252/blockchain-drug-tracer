@@ -44,6 +44,7 @@ export default [
 
     route("regulator/warehouse/batch", "routes/regulator/warehouse/batch/batch.tsx"),
     route("regulator/warehouse/batch/:id", "routes/regulator/warehouse/batch/detail.tsx"),
+    route("regulator/warehouse/batch/:id/register", "routes/regulator/warehouse/batch/register.tsx"),
     route("regulator/warehouse/profile", "routes/regulator/warehouse/profile/profile.tsx"),
     route("regulator/warehouse/profile/:id", "routes/regulator/warehouse/profile/detail.tsx"),
 

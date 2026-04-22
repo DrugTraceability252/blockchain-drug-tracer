@@ -1,8 +1,9 @@
-import { Space, Typography, Tag, Popover, QRCode, Button } from "antd";
+import { Space, Typography, Tag, Popover, Button, Image } from "antd";
 import { QrcodeOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 const batchStatusMap: Record<string, { color: string; label: string }> = {
     PRODUCED: { color: "gold", label: "Đã sản xuất" },
@@ -19,14 +20,13 @@ export const columns = () => [
         key: "batchId",
         render: (text: string) => (
             <Space>
-                <Text strong style={{ color: '#1677ff' }}>{text}</Text>
-                <Popover 
-                    content={<QRCode value={text} size={140} bordered={false} />} 
-                    title="QR Truy xuất Lô"
-                    trigger="hover"
-                >
-                    <QrcodeOutlined style={{ fontSize: '18px', color: '#1677ff', cursor: 'pointer' }} />
-                </Popover>
+                <Image
+                    width={64}
+                    height={64}
+                    src={`${API_BASE_URL}/files/preview?objectName=qrcode/${text}/batch.jpg`}
+                    fallback="https://via.placeholder.com/64?text=No+QR"
+                    style={{ borderRadius: 6, border: '1px solid #f0f0f0' }}
+                />
             </Space>
         )
     },
@@ -44,7 +44,6 @@ export const columns = () => [
         title: "Cơ sở sản xuất",
         dataIndex: "manufacturerFacilityId",
         key: "manufacturerFacilityId",
-        // 🌟 Tương tự, rút gọn ID vô nghĩa của Facility
         render: (text: string, record: any) => (
             <Popover content={`Mã cơ sở: ${text}`}>
                 <Text type="secondary">{record.facilityName || `CS_${text.substring(0, 6)}`}</Text>

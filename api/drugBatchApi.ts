@@ -42,19 +42,27 @@ export const drugBatchApi = {
         return apiClient(`/drug-boxes?${queryString}`, { method: "GET" });
     },
 
-    transfer: (batchId: string, fromFacilityId: string) => {
-        return apiClient(`/drug-batches/${batchId}/transfer?fromFacilityId=${fromFacilityId}`, { 
-            method: "POST" 
+    transfer: (payload: { batchId: string; toOrgId: string; toFacilityId: string; note?: string }) => {
+        return apiClient(`/transports/ship-batch`, { 
+            method: "POST",
+            body: JSON.stringify(payload)
         });
     },
 
-    receive: (batchId: string, toFacilityId: string) => {
-        return apiClient(`/drug-batches/${batchId}/receive?toFacilityId=${toFacilityId}`, { 
+    receive: (eventId: string) => {
+        return apiClient(`/transports/${eventId}/receive`, { 
             method: "POST" 
         });
     },
 
     updateQCStatus: (batchId: string, qcStatus: string) => {
-        return apiClient(`/api/batches/${batchId}/qc?status=${qcStatus}`, { method: "PATCH" });
-    }
+        return apiClient(
+            `/drug-batches/${batchId}/qc-status?qcStatus=${qcStatus}`,
+            { method: "PATCH" }
+        );
+    },
+    
+    getHistory: (batchId: string) => {
+        return apiClient(`/drug-batches/${batchId}/history`, { method: "GET" });
+    },
 };

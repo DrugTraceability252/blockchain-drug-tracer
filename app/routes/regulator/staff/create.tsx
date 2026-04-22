@@ -151,6 +151,7 @@ export default function RegulatorStaffCreate() {
                     <Col span={12}>
                         <Form.Item label="Vai trò (Role)" name="role" rules={[{ required: true, message: "Vui lòng chọn vai trò" }]}>
                             <Select size="large" placeholder="Chọn chức vụ">
+                                <Select.Option value="MANAGER">Quản lý (Manager)</Select.Option>
                                 <Select.Option value="ADMIN">Quản trị viên (Admin)</Select.Option>
                                 {selectedOrgType === "REGULATOR" && (
                                     <Select.Option value="INSPECTOR">Thanh tra viên (Inspector)</Select.Option>
