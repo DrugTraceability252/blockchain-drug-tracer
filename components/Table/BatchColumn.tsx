@@ -1,74 +1,76 @@
-import { Tag, Typography } from "antd";
-import type { ColumnsType } from "antd/es/table";
-import { Link as RouterLink } from "react-router";
+import { Space, Typography, Tag, Popover, Button, Image } from "antd";
+import { QrcodeOutlined } from "@ant-design/icons";
+import dayjs from "dayjs";
 
-const { Link } = Typography;
+const { Text } = Typography;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
-export type BatchData = {
-    batchId: string;
-    drugId: string;
-    drugName?: string;
-    manufacturerFacilityId: string;
-    manufacturerOrgId: string;
-    productionDate: string;
-    expiryDate: string;
-    totalBoxes: number;
-    unit: string;
-    status: string;
+const batchStatusMap: Record<string, { color: string; label: string }> = {
+    PRODUCED: { color: "gold", label: "Đã sản xuất" },
+    IN_TRANSIT: { color: "blue", label: "Đang vận chuyển" },
+    STORED: { color: "cyan", label: "Lưu kho" },
+    DISTRIBUTED: { color: "green", label: "Đã phân phối" },
+    RECALLED: { color: "volcano", label: "Thu hồi" },
 };
 
-const statusMap: Record<string, { label: string; color: string }> = {
-    PRODUCED: { label: "Đã sản xuất", color: "gold" },
-    IN_TRANSIT: { label: "Đang vận chuyển", color: "blue" },
-    DELIVERED: { label: "Đã giao hàng", color: "green" },
-    RECALLED: { label: "Thu hồi", color: "red" },
-};
-
-export const columns: ColumnsType<BatchData> = [
+export const columns = () => [
     {
-        title: "Mã lô",
+        title: "Mã lô & QR",
         dataIndex: "batchId",
         key: "batchId",
+        render: (text: string) => (
+            <Space>
+                <Image
+                    width={64}
+                    height={64}
+                    src={`${API_BASE_URL}/files/preview?objectName=qrcode/${text}/batch.jpg`}
+                    fallback="https://via.placeholder.com/64?text=No+QR"
+                    style={{ borderRadius: 6, border: '1px solid #f0f0f0' }}
+                />
+            </Space>
+        )
     },
     {
-        title: "Mã thuốc", 
-        dataIndex: "drugId", 
+        title: "Sản phẩm",
+        dataIndex: "drugId",
         key: "drugId",
+        render: (text: string, record: any) => (
+            <Popover content={`ID gốc: ${text}`} title="Chi tiết mã">
+                <Text strong>{record.drugName}</Text>
+            </Popover>
+        )
+    },
+    {
+        title: "Cơ sở sản xuất",
+        dataIndex: "manufacturerFacilityId",
+        key: "manufacturerFacilityId",
+        render: (text: string, record: any) => (
+            <Popover content={`Mã cơ sở: ${text}`}>
+                <Text type="secondary">{record.facilityName || `CS_${text.substring(0, 6)}`}</Text>
+            </Popover>
+        )
+    },
+    {
+        title: "Sản lượng",
+        dataIndex: "totalBoxes",
+        key: "totalBoxes",
+        render: (total: number, record: any) => (
+            <Text>{total} {record.unit || 'hộp'}</Text>
+        )
+    },
+    {
+        title: "Hạn sử dụng",
+        dataIndex: "expiryDate",
+        key: "expiryDate",
+        render: (date: string) => date ? dayjs(date).format("DD/MM/YYYY") : "—"
     },
     {
         title: "Trạng thái",
         dataIndex: "status",
         key: "status",
         render: (status: string) => {
-            const config = statusMap[status] || { label: status || "UNKNOWN", color: "default" };
+            const config = batchStatusMap[status] || { color: "default", label: status };
             return <Tag color={config.color}>{config.label}</Tag>;
-        },
-    },
-    {
-        title: "Số lượng",
-        dataIndex: "totalBoxes", 
-        key: "totalBoxes",
-        render: (text, record) => `${text} ${record.unit || ''}`,
-    },
-    {
-        title: "Ngày sản xuất",
-        dataIndex: "productionDate",
-        key: "productionDate",
-        render: (dateStr) => {
-            if (!dateStr) return "";
-            return new Date(dateStr).toLocaleDateString("vi-VN");
         }
-    },
-    {
-        title: "Hành động",
-        key: "action",
-        render: (_, record) => (
-            <RouterLink 
-                to={`/manufacturer/warehouse/batch/${record.batchId}`}
-                style={{ color: '#1890ff' }}
-            >
-                Xem chi tiết
-            </RouterLink>
-        ),
-    },
+    }
 ];

@@ -22,7 +22,7 @@ export const drugProfileApi = {
     },
 
     updateStatus: (drugId: string, status: string) => {
-        return apiClient(`/api/drugs/${drugId}/status?status=${status}`, { 
+        return apiClient(`/drug-profiles/${drugId}/status?status=${status}`, {
             method: "PATCH" 
         });
     }

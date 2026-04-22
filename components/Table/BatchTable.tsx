@@ -20,7 +20,7 @@ export default function BatchTable({
         <Flex vertical style={{ height: "100%" }}>
             <div style={{ flex: 1, overflow: "hidden" }}>
                 <Table
-                    columns={columns}
+                    columns={columns()}
                     dataSource={dataSource}
                     pagination={false}
                     bordered

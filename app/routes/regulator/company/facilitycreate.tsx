@@ -82,7 +82,7 @@ export default function FacilityCreate() {
                 style={{ padding: 24, background: '#fff', borderRadius: 8 }}
             >
                 <Row gutter={24}>
-                    <Col span={24}>
+                    <Col xs={24}>
                         <Form.Item 
                             label="Thuộc Tổ chức / Công ty" 
                             name="orgId" 
@@ -107,13 +107,13 @@ export default function FacilityCreate() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={16}>
+                    <Col xs={24} md={16}>
                         <Form.Item label="Tên cơ sở" name="facilityName" rules={[{ required: true }]}>
                             <Input size="large" placeholder="VD: Kho tổng miền Trung" />
                         </Form.Item>
                     </Col>
 
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                         <Form.Item label="Loại cơ sở" name="facilityType" rules={[{ required: true }]}>
                             <Select size="large" placeholder="-- Chọn loại --">
                                 <Select.Option value="FACTORY">Nhà máy sản xuất</Select.Option>
@@ -124,19 +124,19 @@ export default function FacilityCreate() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} md={12}>
                         <Form.Item label="Giấy phép cơ sở (Mã GPP, GSP, GMP...)" name="licenseNumber" rules={[{ required: true }]}>
                             <Input size="large" placeholder="VD: GSP-2025-001" />
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} md={12}>
                         <Form.Item label="Số điện thoại cơ sở" name="contactPhone" rules={[{ required: true }]}>
                             <Input size="large" placeholder="SĐT liên lạc của cơ sở này" />
                         </Form.Item>
                     </Col>
 
-                    <Col span={24}>
+                    <Col xs={24}>
                         <Form.Item label="Địa chỉ thực tế" name="address" rules={[{ required: true }]}>
                             <Input.TextArea rows={3} size="large" placeholder="Nhập địa chỉ..." />
                         </Form.Item>

@@ -258,6 +258,11 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                             label: "Chi tiết lô",
                             path: "/regulator/warehouse/batch/:id",
                         },
+                        {
+                            key: "register",
+                            label: "Duyệt lô",
+                            path: "/regulator/warehouse/batch/:id/register",
+                        }
                     ],
                 },
             ]
@@ -286,12 +291,60 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
         },
     ],
 
-    ADMIN: [
+    PHARMACY: [
         {
             key: "dashboard",
-            label: "Dashboard",
+            label: "Bảng điều khiển",
             icon: <LayoutOutlined />,
-            path: "/admin/dashboard",
+            path: "/pharmacy/dashboard",
+        },
+        {
+            key: "distribute",
+            label: "Vận chuyển",
+            icon: <HomeOutlined />,
+            children: [
+                {
+                    key: "create",
+                    label: "Danh sách vận chuyển",
+                    path: "/pharmacy/distribute",
+                    children: [
+                        {
+                            key: "detail",
+                            label: "Chi tiết vận chuyển",
+                            path: "/pharmacy/distribute/:id",
+                        },
+                    ]
+                },
+                
+            ]
+        },
+        {
+            key: "staff",
+            label: "Nhân viên",
+            icon: <TeamOutlined />,
+            children: [
+                {
+                    key: "pStaffProfile",
+                    label: "Danh sách nhân viên",
+                    path: "/pharmacy/staff",
+                },
+                {
+                    key: "create",
+                    label: "Thêm nhân viên",
+                    path: "/pharmacy/staff/create",
+                },
+                {
+                    key: "register",
+                    label: "Duyệt hồ sơ",
+                    path: "/pharmacy/staff/register",
+                },
+            ],
+        },
+        {
+            key: "alerts",
+            label: "Cảnh báo",
+            icon: <BellOutlined />,
+            path: "/pharmacy/alerts",
         },
     ],
 };
