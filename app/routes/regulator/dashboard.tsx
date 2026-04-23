@@ -104,7 +104,7 @@ export default function RegulatorDashboard() {
         setHeaderActions(
             <Flex justify='center' align='center' gap='small'>
                 <Button variant='outlined' icon={<FileTextOutlined />} size="large" onClick={() => message.info("Đang xuất báo cáo định kỳ...")}>
-                    Xuất báo cáo hệ thống
+                    Xuất báo cáo
                 </Button>
             </Flex>
         );
