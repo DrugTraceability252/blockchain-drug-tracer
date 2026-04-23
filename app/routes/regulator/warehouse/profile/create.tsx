@@ -1,0 +1,280 @@
+import { UploadOutlined } from "@ant-design/icons";
+import { Button, Form, Input, Layout, Row, Col, Select, Upload, message, Card, DatePicker, InputNumber } from "antd";
+import { drugProfileApi } from "api/drugProfileApi";
+import { organizationApi } from "api/organizationApi"; 
+import { useHeaderActions } from "contexts/HeaderActionsContext";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
+import dayjs from "dayjs";
+import { useAuth } from "auth/useAuth";
+
+const { TextArea } = Input;
+
+const normFile = (e: any) => {
+    if (Array.isArray(e)) return e;
+    return e?.fileList;
+};
+
+export default function RegulatorWarehouseCreateProfile() {
+    const [form] = Form.useForm();
+    const { setHeaderActions } = useHeaderActions();
+    const [loading, setLoading] = useState(false);
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    
+    // 🌟 STATES QUẢN LÝ TỔ CHỨC & CƠ SỞ
+    const [orgList, setOrgList] = useState<any[]>([]);
+    const [facilities, setFacilities] = useState<any[]>([]);
+    const [loadingOrgs, setLoadingOrgs] = useState(false);
+    const [loadingFacilities, setLoadingFacilities] = useState(false);
+
+    // 1. LẤY DANH SÁCH TỔ CHỨC LÚC VÀO TRANG
+    useEffect(() => {
+        const fetchOrgs = async () => {
+            setLoadingOrgs(true);
+            try {
+                const res = await organizationApi.getAll({ page: 0, size: 100 });
+                setOrgList(res.data || res.content || res || []);
+            } catch (error) {
+                message.error("Không thể tải danh sách tổ chức!");
+            } finally {
+                setLoadingOrgs(false);
+            }
+        };
+        fetchOrgs();
+    }, []);
+
+    // 2. KHI CHỌN TỔ CHỨC -> TẢI DANH SÁCH CƠ SỞ TƯƠNG ỨNG
+    const handleOrgChange = async (orgId: string) => {
+        form.setFieldsValue({ manufacturerFacilityId: undefined }); // Xóa cơ sở cũ nếu có
+        setFacilities([]);
+        if (!orgId) return;
+
+        setLoadingFacilities(true);
+        try {
+            const res = await organizationApi.getFacilities(orgId);
+            setFacilities(res.data || res || []);
+        } catch (error) {
+            message.error("Không thể tải danh sách cơ sở sản xuất!");
+        } finally {
+            setLoadingFacilities(false);
+        }
+    };
+
+    useEffect(() => {
+        setHeaderActions(
+            <Button 
+                type="primary" 
+                size="large" 
+                onClick={() => form.submit()}
+                loading={loading}
+            >
+                Lưu hồ sơ thuốc
+            </Button>
+        );
+        return () => setHeaderActions(null);
+    }, [setHeaderActions, form, loading]);
+
+    const onFinish = async (values: any) => {
+        setLoading(true);
+        try {
+            const documentHashes = values.documentHashes?.map((f: any) => f.name) || ["mock_hash_abc123"];
+
+            const payload = {
+                drugName: values.drugName,
+                // 🌟 Lấy OrgId và FacilityId từ Form (do Regulator tự chọn)
+                manufacturerOrgId: values.manufacturerOrgId, 
+                manufacturerFacilityId: values.manufacturerFacilityId, 
+                
+                licenseNumber: values.licenseNumber,
+                licenseExpiry: values.licenseExpiry ? dayjs(values.licenseExpiry).toISOString() : null,
+                decisionNumber: values.decisionNumber,
+                approvalYear: Number(values.approvalYear),
+                approvalBatch: String(values.approvalBatch),
+                ingredient: values.ingredient,
+                strength: values.strength,
+                drugType: values.drugType,
+                dosageForm: values.dosageForm,
+                packaging: values.packaging,
+                qualityStandard: values.qualityStandard,
+                shelfLife: values.shelfLife ? String(values.shelfLife).trim() : "",
+                documentHashes: documentHashes
+            };
+
+            await drugProfileApi.create(payload);
+            message.success("Tạo hồ sơ thuốc thành công!");
+            navigate("/regulator/warehouse/profile");
+
+        } catch (error) {
+            console.error("Lỗi khi tạo hồ sơ thuốc:", error);
+            message.error("Có lỗi xảy ra từ máy chủ (500). Vui lòng kiểm tra lại log Backend!");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <Layout.Content style={{ padding: '12px'}}>
+            <Form form={form} layout="vertical" onFinish={onFinish}>
+                <Row gutter={[24, 12]}>
+                    {/* BLOCK 1: THÔNG TIN CƠ BẢN */}
+                    <Col span={24}>
+                        <Card title="Thông tin cơ bản">
+                            <div style={{padding: 8}}>
+                            <Row gutter={16}>
+                                <Col span={8}>
+                                    <Form.Item label="Mã thuốc (Drug ID)" name="drugId" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: DRUG_HAPA_001" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={8}>
+                                    <Form.Item label="Tên thuốc" name="drugName" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: Hapacol 500" />
+                                    </Form.Item>
+                                </Col>
+                                
+                                {/* 🌟 TRƯỜNG CHỌN TỔ CHỨC MỚI */}
+                                <Col span={8}>
+                                    <Form.Item label="Tổ chức đăng ký (Công ty)" name="manufacturerOrgId" rules={[{ required: true, message: 'Vui lòng chọn công ty!' }]}>
+                                        <Select
+                                            showSearch
+                                            placeholder="Chọn công ty..."
+                                            loading={loadingOrgs}
+                                            onChange={handleOrgChange}
+                                            filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                            options={orgList.map(org => ({
+                                                label: org.orgName || org.id || org.orgId,
+                                                value: org.id || org.orgId
+                                            }))}
+                                        />
+                                    </Form.Item>
+                                </Col>
+
+                                {/* 🌟 TRƯỜNG CHỌN CƠ SỞ (Phụ thuộc vào Tổ chức) */}
+                                <Col span={8}>
+                                    <Form.Item label="Cơ sở sản xuất" name="manufacturerFacilityId" rules={[{ required: true, message: 'Vui lòng chọn cơ sở!' }]}>
+                                        <Select
+                                            showSearch
+                                            placeholder={form.getFieldValue('manufacturerOrgId') ? "Chọn cơ sở sản xuất..." : "Vui lòng chọn công ty trước"}
+                                            loading={loadingFacilities}
+                                            disabled={!form.getFieldValue('manufacturerOrgId') || facilities.length === 0}
+                                            filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
+                                            options={facilities.map(fac => ({
+                                                label: fac.facilityName || fac.id || fac.facilityId,
+                                                value: fac.id || fac.facilityId
+                                            }))}
+                                        />
+                                    </Form.Item>
+                                </Col>
+                                
+                                <Col span={8}>
+                                    <Form.Item label="Nhóm thuốc" name="drugType" rules={[{ required: true }]}>
+                                        <Select options={[
+                                            { value: "OTC", label: "Không kê đơn (OTC)" },
+                                            { value: "PRESCRIPTION", label: "Thuốc kê đơn" },
+                                            { value: "VACCINE", label: "Vắc-xin" }
+                                        ]} />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={8}>
+                                    <Form.Item label="Dạng bào chế" name="dosageForm" rules={[{ required: true }]}>
+                                        <Select options={[
+                                            { value: "TABLET", label: "Viên nén (TABLET)" },
+                                            { value: "CAPSULE", label: "Viên nang (CAPSULE)" },
+                                            { value: "INJECTION", label: "Thuốc tiêm" },
+                                            { value: "SYRUP", label: "Siro" }
+                                        ]} />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                            </div>
+                        </Card>
+                    </Col>
+
+                    {/* BLOCK 2: THÀNH PHẦN & ĐÓNG GÓI */}
+                    <Col span={24}>
+                        <Card title="Thành phần & Đóng gói">
+                            <div style={{padding: 8}}>
+                            <Row gutter={16}>
+                                <Col span={12}>
+                                    <Form.Item label="Thành phần (Ingredient)" name="ingredient" rules={[{ required: true }]}>
+                                        <TextArea rows={2} placeholder="VD: Paracetamol..." />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={12}>
+                                    <Form.Item label="Hàm lượng (Strength)" name="strength" rules={[{ required: true }]}>
+                                        <TextArea rows={2} placeholder="VD: 500mg" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={8}>
+                                    <Form.Item label="Quy cách đóng gói" name="packaging" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: Hộp 10 vỉ x 10 viên" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={8}>
+                                    <Form.Item label="Tiêu chuẩn chất lượng" name="qualityStandard" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: TCCS, DĐVN V" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={8}>
+                                    <Form.Item label="Hạn sử dụng (Shelf Life)" name="shelfLife" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: 36 tháng" />
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                            </div>
+                        </Card>
+                    </Col>
+
+                    {/* BLOCK 3: HỒ SƠ CẤP PHÉP */}
+                    <Col span={24}>
+                        <Card title="Hồ sơ cấp phép & Pháp lý">
+                            <div style={{padding: 8}}>
+                            <Row gutter={16}>
+                                <Col span={6}>
+                                    <Form.Item label="Số đăng ký (License No.)" name="licenseNumber" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: VD-12345-20" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={6}>
+                                    <Form.Item label="Hạn giấy phép" name="licenseExpiry" rules={[{ required: true }]}>
+                                        <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={4}>
+                                    <Form.Item label="Số quyết định" name="decisionNumber" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: 123/QĐ-QLD" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={4}>
+                                    <Form.Item label="Năm phê duyệt" name="approvalYear" rules={[{ required: true }]}>
+                                        <InputNumber style={{ width: '100%' }} min={2000} max={2100} placeholder="VD: 2024" />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={4}>
+                                    <Form.Item label="Đợt phê duyệt" name="approvalBatch" rules={[{ required: true }]}>
+                                        <Input placeholder="VD: Đợt 101" />
+                                    </Form.Item>
+                                </Col>
+                                
+                                <Col span={24}>
+                                    <Form.Item
+                                        label="Tài liệu minh chứng (Document Hashes)"
+                                        name="documentHashes"
+                                        valuePropName="fileList"
+                                        getValueFromEvent={normFile}
+                                    >
+                                        <Upload name="file" beforeUpload={() => false} multiple>
+                                            <Button icon={<UploadOutlined />}>Tải lên tài liệu (PDF, Word...)</Button>
+                                        </Upload>
+                                    </Form.Item>
+                                </Col>
+                            </Row>
+                            </div>
+                        </Card>
+                    </Col>
+                </Row>
+            </Form>
+        </Layout.Content>
+    );
+}

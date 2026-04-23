@@ -242,10 +242,15 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                     path: "/regulator/warehouse/profile",
                     children: [
                         {
+                            key: "create",
+                            label: "Thêm hồ sơ thuốc",
+                            path: "/regulator/warehouse/profile/create",
+                        },
+                        {
                             key: "detail",
                             label: "chi tiết thuốc",
                             path: "/regulator/warehouse/profile/:id",
-                        }
+                        },
                     ]
                 },
                 {

@@ -90,7 +90,7 @@ export default function ManufacturerWarehouseBatch() {
 
     return (
         <>
-            <Layout.Header className="headerLayout" style={{ height: 'auto', padding: '16px 24px' }}>
+            <Layout.Header className="headerLayout">
                 <Flex justify='space-between' align='center' gap='large' wrap="wrap">
                 <Flex flex={1} style={{ minWidth: 250 }}>
                     <Input

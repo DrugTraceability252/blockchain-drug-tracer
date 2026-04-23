@@ -1,4 +1,4 @@
-import { Table, Pagination, Flex, type TableProps } from "antd";
+import { Table, Pagination, Flex, type TableProps, type TableColumnsType } from "antd";
 import { columns } from "./BatchColumn";
 import { useNavigate } from "react-router";
 
@@ -20,7 +20,7 @@ export default function BatchTable({
         <Flex vertical style={{ height: "100%" }}>
             <div style={{ flex: 1, overflow: "hidden" }}>
                 <Table
-                    columns={columns()}
+                    columns={columns() as TableColumnsType<any>}
                     dataSource={dataSource}
                     pagination={false}
                     bordered

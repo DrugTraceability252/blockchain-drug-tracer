@@ -22,13 +22,13 @@ export default function ManufacturerWarehouseProfile() {
     useEffect(() => {
         setHeaderActions(
             <Flex justify='center' align='center' gap='small'>
-                <Link to="/manufacturer/warehouse/batch/create">
+                <Link to="/regulator/warehouse/batch/create">
                     <Button variant="outlined" icon={<PlusOutlined />} size="large">
                         Tạo lô thuốc
                     </Button>
                 </Link>
 
-                <Link to="/manufacturer/warehouse/profile/create">
+                <Link to="/regulator/warehouse/profile/create">
                     <Button type="primary" icon={<PlusOutlined />} size="large">
                         Thêm hồ sơ
                     </Button>

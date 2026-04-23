@@ -1,4 +1,5 @@
-import { Col, Flex, Row, Tag, Typography, Button, Spin, message } from "antd";
+import { Col, Flex, Row, Tag, Typography, Button, Spin, message, Modal } from "antd";
+import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons"; 
 import { drugProfileApi } from "api/drugProfileApi";
 import { organizationApi } from "api/organizationApi";
 import { drugBatchApi } from "api/drugBatchApi";
@@ -16,11 +17,13 @@ export default function MedicineDetail() {
     const location = useLocation();
     
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false); 
     const [medicineDetail, setMedicineDetail] = useState<any>(location.state || null);
     
     const [orgName, setOrgName] = useState<string>("Đang tải dữ liệu...");
     const [batches, setBatches] = useState<any[]>([]);
     const [loadingBatches, setLoadingBatches] = useState(false);
+    const { user } = useAuth(); 
 
     const batchColumns = [
         { title: 'Mã lô', dataIndex: 'batchId', key: 'batchId', render: (text: string) => <Text strong>{text}</Text> },
@@ -28,19 +31,16 @@ export default function MedicineDetail() {
         { 
             title: 'Ngày sản xuất', 
             dataIndex: 'productionDate', 
-            key: 'productionDate',
             render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY') : '—'
         },
         { 
             title: 'Hạn sử dụng', 
             dataIndex: 'expiryDate', 
-            key: 'expiryDate',
             render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY') : '—'
         },
         {
             title: 'Kiểm định (QC)',
             dataIndex: 'qcStatus',
-            key: 'qcStatus',
             render: (status: string) => {
                 if (status === 'PASSED') return <Tag color="success">Đạt chuẩn</Tag>;
                 if (status === 'FAILED') return <Tag color="error">Không đạt</Tag>;
@@ -48,9 +48,8 @@ export default function MedicineDetail() {
             }
         },
         { 
-            title: 'Trạng thái', 
+            title: 'Trạng thái lô', 
             dataIndex: 'status', 
-            key: 'status',
             render: (status: string) => {
                 const statusMap: Record<string, { color: string, label: string }> = {
                     PRODUCED: { color: "gold", label: "Vừa sản xuất" },
@@ -70,43 +69,41 @@ export default function MedicineDetail() {
         },
     ];
 
-    const { user } = useAuth(); 
+    const currentStatus = medicineDetail.approveStatus || 'PENDING'; 
+    const isPending = currentStatus === 'PENDING' || currentStatus === 'INACTIVE' || currentStatus === 'WAITING';
+    const isActive = currentStatus === 'ACTIVE' || currentStatus === 'APPROVED' || currentStatus === 'PASSED';
+    const isRejected = currentStatus === 'REJECTED' || currentStatus === 'FAILED';
+
+    
 
     useEffect(() => {
         const fetchAllData = async () => {
-            if (!drugId) {
-                setLoading(false);
-                return;
-            }
+            if (!drugId) { setLoading(false); return; }
 
             try {
                 setLoading(true);
-                let currentDetail = medicineDetail;
 
-                if (!currentDetail || currentDetail.drugId !== drugId) {
-                    currentDetail = await drugProfileApi.getById(drugId);
-                    setMedicineDetail(currentDetail);
-                }
-
+                const res = await drugProfileApi.getById(drugId);
+                let rawData = res.data || res.content || res;
+                
+                const currentDetail = Array.isArray(rawData) ? rawData[0] : rawData;
+                
+                setMedicineDetail(currentDetail);
                 if (currentDetail && currentDetail.manufacturerOrgId) {
                     setLoadingBatches(true);
                     
                     const fetchOrgName = async () => {
-                       
                         if (currentDetail.manufacturerOrgId === user?.orgId) {
-                            setOrgName(user?.orgId|| "Tổ chức của bạn (My Company)");
+                            setOrgName(user?.orgId || "Tổ chức của bạn");
                             return;
                         }
-
                         try {
                             if (typeof organizationApi.getById !== 'function') {
-                                setOrgName(currentDetail.manufacturerOrgId); 
-                                return;
+                                setOrgName(currentDetail.manufacturerOrgId); return;
                             }
                             const orgRes = await organizationApi.getById(currentDetail.manufacturerOrgId);
                             setOrgName(orgRes.data?.orgName || orgRes.orgName || currentDetail.manufacturerOrgId);
                         } catch (error) {
-                            console.error("Lỗi API lấy tên công ty:", error);
                             setOrgName(currentDetail.manufacturerOrgId);
                         }
                     };
@@ -114,28 +111,20 @@ export default function MedicineDetail() {
                     const fetchBatches = async () => {
                         try {
                             const batchesRes = await drugBatchApi.getAll({ 
-                                orgId: currentDetail.manufacturerOrgId, 
-                                page: 0, 
-                                size: 100 
+                                orgId: currentDetail.manufacturerOrgId, page: 0, size: 100 
                             });
-                            const allBatches = batchesRes.data || batchesRes.content || [];
-                            
-                            const relatedBatches = allBatches.filter((b: any) => b.drugId === drugId);
-                            setBatches(relatedBatches);
-                        } catch (error) {
-                            console.error("Lỗi tải lô thuốc:", error);
-                            setBatches([]);
-                        }
+                            const allBatches = batchesRes.data || batchesRes.content || batchesRes || [];
+                            setBatches(allBatches.filter((b: any) => b.drugId === drugId));
+                        } catch (error) { setBatches([]); }
                     };
 
                     await Promise.all([fetchOrgName(), fetchBatches()]);
                 } else {
-                    setOrgName("Không có thông tin Nhà sản xuất");
+                    setOrgName("Hồ sơ thuốc chưa có mã Nhà sản xuất (manufacturerOrgId)");
                 }
             } catch (error) {
-                console.error("Lỗi lấy dữ liệu chi tiết tổng:", error);
-                message.error("Không thể tải toàn bộ thông tin. Vui lòng thử lại!");
-                setOrgName(medicineDetail?.manufacturerOrgId || "Lỗi tải dữ liệu");
+                console.error("Lỗi API getById:", error);
+                message.error("Không thể tải thông tin thuốc từ máy chủ!");
             } finally {
                 setLoading(false);
                 setLoadingBatches(false);
@@ -153,54 +142,36 @@ export default function MedicineDetail() {
         );
     }
 
-    if (!medicineDetail) {
-        return <div style={{ padding: 24 }}>Không tìm thấy hồ sơ thuốc này.</div>;
-    }
+    if (!medicineDetail) return <div style={{ padding: 24 }}>Không tìm thấy hồ sơ thuốc này.</div>;
 
     return (
-        <div style={{ padding: '8px', minHeight: '100vh' }}>
+        <div style={{ padding: '8px'}}>
 
             <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
                 <Col span={14}>
                     <BorderCard title="Nhà sản xuất">
                         <Flex justify="space-between" align="center" style={{ padding: 16 }}>
                             <Text strong style={{ fontSize: 16, color: '#1677ff' }}>{orgName}</Text>
-                            <Button type="link">Xem chi tiết »</Button>
                         </Flex>
                     </BorderCard>
                 </Col>
+
                 <Col span={10}>
-                    <BorderCard>
-                        <Flex style={{ height: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid #d9d9d9' }}>
-                            <div style={{ 
-                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0',
-                                backgroundColor: medicineDetail.status === 'PENDING' ? '#1890ff' : '#f5f5f5', 
-                                color: medicineDetail.status === 'PENDING' ? '#fff' : '#bfbfbf', 
-                                fontWeight: medicineDetail.status === 'PENDING' ? 'bold' : 'normal',
-                                borderRight: '1px solid #d9d9d9',
-                                transition: 'all 0.3s ease'
-                            }}>
-                                Chờ duyệt
-                            </div>
-                            <div style={{ 
-                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0',
-                                backgroundColor: medicineDetail.status === 'ACTIVE' ? '#52c41a' : '#f5f5f5', 
-                                color: medicineDetail.status === 'ACTIVE' ? '#fff' : '#bfbfbf', 
-                                fontWeight: medicineDetail.status === 'ACTIVE' ? 'bold' : 'normal',
-                                borderRight: '1px solid #d9d9d9',
-                                transition: 'all 0.3s ease'
-                            }}>
-                                Đã duyệt
-                            </div>
-                            <div style={{ 
-                                flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px 0',
-                                backgroundColor: medicineDetail.status === 'REJECTED' ? '#ff4d4f' : '#f5f5f5', 
-                                color: medicineDetail.status === 'REJECTED' ? '#fff' : '#bfbfbf', 
-                                fontWeight: medicineDetail.status === 'REJECTED' ? 'bold' : 'normal',
-                                transition: 'all 0.3s ease'
-                            }}>
-                                Từ chối
-                            </div>
+                    <BorderCard title="Trạng thái cấp phép">
+                        <Flex vertical gap={16} style={{ padding: '16px' }}>
+                            
+                            <Flex style={{ width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
+                                <div style={{ flex: 1, borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '12px 0', backgroundColor: isPending ? '#e6f4ff' : 'transparent', color: isPending ? '#1677ff' : '#ccc', fontWeight: isPending ? 'bold' : 'normal' }}>
+                                    Chờ duyệt
+                                </div>
+                                <div style={{ flex: 1, borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '12px 0', backgroundColor: isActive ? '#f6ffed' : 'transparent', color: isActive ? '#52c41a' : '#ccc', fontWeight: isActive ? 'bold' : 'normal' }}>
+                                    Đã duyệt
+                                </div>
+                                <div style={{ flex: 1, textAlign: 'center', padding: '12px 0', backgroundColor: isRejected ? '#fff2f0' : 'transparent', color: isRejected ? '#ff4d4f' : '#ccc', fontWeight: isRejected ? 'bold' : 'normal' }}>
+                                    Từ chối
+                                </div>
+                            </Flex>
+
                         </Flex>
                     </BorderCard>
                 </Col>

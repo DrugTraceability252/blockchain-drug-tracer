@@ -1,5 +1,5 @@
 import { Space, Typography, Tag, Popover, Button, Image } from "antd";
-import { QrcodeOutlined } from "@ant-design/icons";
+import { QrcodeOutlined, EyeOutlined } from "@ant-design/icons"; // 🌟 ĐÃ THÊM EyeOutlined
 import dayjs from "dayjs";
 
 const { Text } = Typography;
@@ -13,7 +13,7 @@ const batchStatusMap: Record<string, { color: string; label: string }> = {
     RECALLED: { color: "volcano", label: "Thu hồi" },
 };
 
-export const columns = () => [
+export const columns = (onView?: (record: any) => void) => [
     {
         title: "Mã lô & QR",
         dataIndex: "batchId",
@@ -72,5 +72,18 @@ export const columns = () => [
             const config = batchStatusMap[status] || { color: "default", label: status };
             return <Tag color={config.color}>{config.label}</Tag>;
         }
+    },
+    {
+        title: "Hành động",
+        key: "action",
+        align: "center",
+        render: (_: any, record: any) => (
+            <Button
+                type="text"
+                icon={<EyeOutlined style={{ fontSize: '18px', color: '#1677ff' }} />}
+                onClick={() => onView && onView(record)}
+                title="Xem chi tiết"
+            />
+        )
     }
 ];
