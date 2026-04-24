@@ -1,5 +1,5 @@
-import { Col, Flex, Row, Tag, Typography, Button, Spin, message, Modal } from "antd";
-import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons"; 
+import { Col, Flex, Row, Tag, Typography, Button, Spin, message, Modal, List } from "antd";
+import { CheckCircleOutlined, CloseCircleOutlined, EyeOutlined, FileTextOutlined } from "@ant-design/icons"; 
 import { drugProfileApi } from "api/drugProfileApi";
 import { organizationApi } from "api/organizationApi";
 import { drugBatchApi } from "api/drugBatchApi";
@@ -24,6 +24,10 @@ export default function MedicineDetail() {
     const [batches, setBatches] = useState<any[]>([]);
     const [loadingBatches, setLoadingBatches] = useState(false);
     const { user } = useAuth(); 
+
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [documents, setDocuments] = useState<string[]>([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
 
     const batchColumns = [
         { title: 'Mã lô', dataIndex: 'batchId', key: 'batchId', render: (text: string) => <Text strong>{text}</Text> },
@@ -159,6 +163,61 @@ export default function MedicineDetail() {
         fetchAllData();
     }, [drugId, user]);
 
+    const handleOpenDocuments = async () => {
+        const targetId = drugId || medicineDetail?.drugId || medicineDetail?.id;
+
+        if (!targetId) {
+            message.error("Lỗi: Hệ thống không xác định được Mã hồ sơ thuốc (ID) để tìm file!");
+            console.error("Trạng thái hiện tại:", { drugId_Tu_URL: drugId, data_Chi_Tiet: medicineDetail });
+            return;
+        }
+
+        setIsDocModalOpen(true);
+        setLoadingDocs(true);
+        try {
+            const res = await drugProfileApi.getDocuments(targetId);
+            
+            let docList = [];
+            if (Array.isArray(res)) {
+                docList = res;
+            } else if (res && Array.isArray(res.data)) {
+                docList = res.data;
+            }
+
+            setDocuments(docList);
+            
+            if (docList.length === 0) {
+                message.warning("Hồ sơ này chưa có tài liệu nào được đính kèm!");
+            }
+            
+        } catch (error) {
+            console.error("Lỗi lấy danh sách file:", error);
+            message.error("Không thể tải danh sách tài liệu đính kèm!");
+            setDocuments([]);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+    
+    const handlePreviewFile = async (filename: string) => {
+        const targetId = drugId || medicineDetail?.drugId || medicineDetail?.id;
+        if (!targetId) return;
+
+        const hide = message.loading(`Đang tải file ${filename}...`, 0);
+        try {
+            const blob = await drugProfileApi.getPreviewDocument(targetId, filename);
+            
+            const fileURL = URL.createObjectURL(blob);
+            window.open(fileURL, '_blank');
+            
+        } catch (error) {
+            console.error("Lỗi preview file:", error);
+            message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
+        } finally {
+            hide();
+        }
+    };
+
     if (loading) {
         return (
             <Flex justify="center" align="center" style={{ height: '100vh' }}>
@@ -258,6 +317,15 @@ export default function MedicineDetail() {
                             <Text><b>Số đăng ký:</b> {medicineDetail.licenseNumber || '—'}</Text>
                             <Text><b>Quyết định số:</b> {medicineDetail.decisionNumber || '—'}</Text>
                             <Text><b>Ngày hết hạn giấy phép:</b> {medicineDetail.licenseExpiry ? dayjs(medicineDetail.licenseExpiry).format('DD/MM/YYYY') : '—'}</Text>
+                        
+                            <Button 
+                                type="dashed" 
+                                icon={<FileTextOutlined />} 
+                                onClick={handleOpenDocuments}
+                                style={{ marginTop: 8 }}
+                            >
+                                Xem tài liệu đính kèm
+                            </Button>
                         </Flex>
                     </BorderCard>
                 </Col>
@@ -282,6 +350,44 @@ export default function MedicineDetail() {
                     rowKey="batchId"
                 />
             </BorderCard>
+
+            <Modal
+                title="Tài liệu đính kèm hồ sơ"
+                open={isDocModalOpen}
+                onCancel={() => setIsDocModalOpen(false)}
+                footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
+                destroyOnClose
+            >
+                {loadingDocs ? (
+                    <Flex justify="center" style={{ padding: 24 }}>
+                        <Spin tip="Đang tải danh sách tài liệu..." />
+                    </Flex>
+                ) : (
+                    <List
+                        dataSource={documents}
+                        locale={{ emptyText: "Không có tài liệu nào được đính kèm." }}
+                        renderItem={(filename) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        type="primary" 
+                                        icon={<EyeOutlined />} 
+                                        size="small" 
+                                        onClick={() => handlePreviewFile(filename)}
+                                    >
+                                        Xem trước
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={<FileTextOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
+                                    title={<Text strong>{filename}</Text>}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                )}
+            </Modal>
         </div>
     );
 }

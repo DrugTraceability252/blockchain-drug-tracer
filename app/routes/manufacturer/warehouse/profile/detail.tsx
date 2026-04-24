@@ -1,5 +1,5 @@
-import { Col, Flex, Row, Tag, Typography, Button, Spin, message, Modal } from "antd";
-import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons"; 
+import { Col, Flex, Row, Tag, Typography, Button, Spin, message, Modal, List } from "antd";
+import { CheckCircleOutlined, CloseCircleOutlined, FileTextOutlined, EyeOutlined } from "@ant-design/icons"; 
 import { drugProfileApi } from "api/drugProfileApi";
 import { organizationApi } from "api/organizationApi";
 import { drugBatchApi } from "api/drugBatchApi";
@@ -11,6 +11,7 @@ import dayjs from "dayjs";
 import { useAuth } from "auth/useAuth";
 
 const { Title, Text } = Typography;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
 
 export default function MedicineDetail() {
     const { drugId } = useParams<{ drugId: string }>();
@@ -23,7 +24,17 @@ export default function MedicineDetail() {
     const [orgName, setOrgName] = useState<string>("Đang tải dữ liệu...");
     const [batches, setBatches] = useState<any[]>([]);
     const [loadingBatches, setLoadingBatches] = useState(false);
-    const { user } = useAuth(); 
+    
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [documents, setDocuments] = useState<string[]>([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
+
+    const actualDrugId = drugId || medicineDetail?.drugId || medicineDetail?.id;
+    
+    console.log("🚨 KIỂM TRA ĐẦU VÀO - drugId từ URL:", drugId);
+    console.log("🚨 KIỂM TRA ĐẦU VÀO - Chi tiết thuốc:", medicineDetail);
+
+    const { user, token } = useAuth(); 
 
     const batchColumns = [
         { title: 'Mã lô', dataIndex: 'batchId', key: 'batchId', render: (text: string) => <Text strong>{text}</Text> },
@@ -65,35 +76,33 @@ export default function MedicineDetail() {
         {
             title: 'Hành động',
             key: 'action',
-            render: (_: any, record: any) => <Button type="link" size="small">Xem chi tiết »</Button>,
+            render: (_: any) => <EyeOutlined style={{ color: '#1677ff', cursor: 'pointer' }} onClick={() => message.info("Chức năng xem chi tiết lô hàng đang được phát triển")} />
         },
     ];
 
-    const currentStatus = medicineDetail.approveStatus || 'PENDING'; 
+    const currentStatus = medicineDetail?.approveStatus || 'PENDING'; 
     const isPending = currentStatus === 'PENDING' || currentStatus === 'INACTIVE' || currentStatus === 'WAITING';
     const isActive = currentStatus === 'ACTIVE' || currentStatus === 'APPROVED' || currentStatus === 'PASSED';
     const isRejected = currentStatus === 'REJECTED' || currentStatus === 'FAILED';
 
-    
-
     useEffect(() => {
         const fetchAllData = async () => {
-            if (!drugId) { setLoading(false); return; }
+            if (!actualDrugId) { setLoading(false); return; }
 
             try {
                 setLoading(true);
 
-                const res = await drugProfileApi.getById(drugId);
+                const res = await drugProfileApi.getById(actualDrugId);
                 let rawData = res.data || res.content || res;
-                
                 const currentDetail = Array.isArray(rawData) ? rawData[0] : rawData;
                 
                 setMedicineDetail(currentDetail);
+                
                 if (currentDetail && currentDetail.manufacturerOrgId) {
                     setLoadingBatches(true);
                     
                     const fetchOrgName = async () => {
-                        if (currentDetail.manufacturerOrgId === user?.orgId) {
+                        if (currentDetail.manufacturerOrgId) {
                             setOrgName(user?.orgId || "Tổ chức của bạn");
                             return;
                         }
@@ -110,13 +119,29 @@ export default function MedicineDetail() {
 
                     const fetchBatches = async () => {
                         try {
+                            const targetId = drugId || medicineDetail?.drugId || medicineDetail?.id;
+                            
+                            if (!targetId) return;
+
                             const batchesRes = await drugBatchApi.getAll({ 
-                                orgId: currentDetail.manufacturerOrgId, page: 0, size: 100 
+                                orgId: currentDetail.manufacturerOrgId, 
+                                page: 1, 
+                                size: 100 
                             });
+                            
                             const allBatches = batchesRes.data || batchesRes.content || batchesRes || [];
-                            setBatches(allBatches.filter((b: any) => b.drugId === drugId));
-                        } catch (error) { setBatches([]); }
-                    };
+
+                            const filteredBatches = allBatches.filter((b: any) => {
+                                const bDrugId = b.drugId || b.drugProfileId;
+                                return bDrugId === targetId;
+                            });
+
+                            setBatches(filteredBatches);
+                        } catch (error) { 
+                            console.error("Lỗi lấy lô hàng:", error);
+                            setBatches([]); 
+                        }
+                    }
 
                     await Promise.all([fetchOrgName(), fetchBatches()]);
                 } else {
@@ -132,7 +157,62 @@ export default function MedicineDetail() {
         };
 
         fetchAllData();
-    }, [drugId, user]);
+    }, [actualDrugId, user?.orgId]);
+
+    const handleOpenDocuments = async () => {
+        const targetId = drugId || medicineDetail?.drugId || medicineDetail?.id;
+
+        if (!targetId) {
+            message.error("Lỗi: Hệ thống không xác định được Mã hồ sơ thuốc (ID) để tìm file!");
+            console.error("Trạng thái hiện tại:", { drugId_Tu_URL: drugId, data_Chi_Tiet: medicineDetail });
+            return;
+        }
+
+        setIsDocModalOpen(true);
+        setLoadingDocs(true);
+        try {
+            const res = await drugProfileApi.getDocuments(targetId);
+            
+            let docList = [];
+            if (Array.isArray(res)) {
+                docList = res;
+            } else if (res && Array.isArray(res.data)) {
+                docList = res.data;
+            }
+
+            setDocuments(docList);
+            
+            if (docList.length === 0) {
+                message.warning("Hồ sơ này chưa có tài liệu nào được đính kèm!");
+            }
+            
+        } catch (error) {
+            console.error("Lỗi lấy danh sách file:", error);
+            message.error("Không thể tải danh sách tài liệu đính kèm!");
+            setDocuments([]);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
+    const handlePreviewFile = async (filename: string) => {
+        const targetId = drugId || medicineDetail?.drugId || medicineDetail?.id;
+        if (!targetId) return;
+
+        const hide = message.loading(`Đang tải file ${filename}...`, 0);
+        try {
+            const blob = await drugProfileApi.getPreviewDocument(targetId, filename);
+            
+            const fileURL = URL.createObjectURL(blob);
+            window.open(fileURL, '_blank');
+            
+        } catch (error) {
+            console.error("Lỗi preview file:", error);
+            message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
+        } finally {
+            hide();
+        }
+    };
 
     if (loading) {
         return (
@@ -159,7 +239,6 @@ export default function MedicineDetail() {
                 <Col span={10}>
                     <BorderCard title="Trạng thái cấp phép">
                         <Flex vertical gap={16} style={{ padding: '16px' }}>
-                            
                             <Flex style={{ width: '100%', borderRadius: 8, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
                                 <div style={{ flex: 1, borderRight: '1px solid #f0f0f0', textAlign: 'center', padding: '12px 0', backgroundColor: isPending ? '#e6f4ff' : 'transparent', color: isPending ? '#1677ff' : '#ccc', fontWeight: isPending ? 'bold' : 'normal' }}>
                                     Chờ duyệt
@@ -171,7 +250,6 @@ export default function MedicineDetail() {
                                     Từ chối
                                 </div>
                             </Flex>
-
                         </Flex>
                     </BorderCard>
                 </Col>
@@ -208,6 +286,16 @@ export default function MedicineDetail() {
                             <Text><b>Số đăng ký:</b> {medicineDetail.licenseNumber || '—'}</Text>
                             <Text><b>Quyết định số:</b> {medicineDetail.decisionNumber || '—'}</Text>
                             <Text><b>Ngày hết hạn giấy phép:</b> {medicineDetail.licenseExpiry ? dayjs(medicineDetail.licenseExpiry).format('DD/MM/YYYY') : '—'}</Text>
+                            
+                            <Button 
+                                type="dashed" 
+                                icon={<FileTextOutlined />} 
+                                onClick={handleOpenDocuments}
+                                style={{ marginTop: 8 }}
+                            >
+                                Xem tài liệu đính kèm
+                            </Button>
+
                         </Flex>
                     </BorderCard>
                 </Col>
@@ -232,6 +320,45 @@ export default function MedicineDetail() {
                     rowKey="batchId"
                 />
             </BorderCard>
+
+            <Modal
+                title="Tài liệu đính kèm hồ sơ"
+                open={isDocModalOpen}
+                onCancel={() => setIsDocModalOpen(false)}
+                footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
+                destroyOnClose
+            >
+                {loadingDocs ? (
+                    <Flex justify="center" style={{ padding: 24 }}>
+                        <Spin tip="Đang tải danh sách tài liệu..." />
+                    </Flex>
+                ) : (
+                    <List
+                        dataSource={documents}
+                        locale={{ emptyText: "Không có tài liệu nào được đính kèm." }}
+                        renderItem={(filename) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        type="primary" 
+                                        icon={<EyeOutlined />} 
+                                        size="small" 
+                                        onClick={() => handlePreviewFile(filename)}
+                                    >
+                                        Xem trước
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={<FileTextOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
+                                    title={<Text strong>{filename}</Text>}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                )}
+            </Modal>
+
         </div>
     );
 }
