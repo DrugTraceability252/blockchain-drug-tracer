@@ -1,5 +1,5 @@
-import { Card, Layout, Row, Col, Table, Tag, Button, Flex, message, Modal, Spin, Typography, Image, Form, Input, Select, Timeline } from "antd";
-import { HistoryOutlined } from "@ant-design/icons"; // 🌟 THÊM IMPORT ICON
+import { Card, Layout, Row, Col, Table, Tag, Button, Flex, message, Modal, Spin, Typography, Image, Form, Input, Select, Timeline, List } from "antd";
+import { HistoryOutlined, FileTextOutlined, EyeOutlined } from "@ant-design/icons"; // 🌟 ĐÃ THÊM ICON
 import { drugBatchApi } from "api/drugBatchApi";
 import { drugProfileApi } from "api/drugProfileApi"; 
 import { organizationApi } from "api/organizationApi"; 
@@ -62,6 +62,11 @@ export default function BatchDetail() {
     const [isHistoryVisible, setIsHistoryVisible] = useState(false);
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
+
+    // 🌟 STATE CHO TÍNH NĂNG XEM TÀI LIỆU
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [documents, setDocuments] = useState<string[]>([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
 
     const fetchBatchDetail = useCallback(async () => {
         try {
@@ -191,6 +196,45 @@ export default function BatchDetail() {
         }
     };
 
+    // 🌟 HÀM MỞ MODAL VÀ LẤY DANH SÁCH FILE CỦA LÔ THUỐC
+    const handleOpenDocuments = async () => {
+        if (!id) return;
+        setIsDocModalOpen(true);
+        setLoadingDocs(true);
+        try {
+            const res = await drugBatchApi.getDocuments(id);
+            let docList = Array.isArray(res) ? res : (res?.data || []);
+            setDocuments(docList);
+            
+            if (docList.length === 0 || (docList.length === 1 && docList[0] === "no_document")) {
+                message.warning("Lô thuốc này chưa có hồ sơ QC nào được đính kèm!");
+                setDocuments([]); 
+            }
+        } catch (error) {
+            console.error("Lỗi lấy danh sách file:", error);
+            message.error("Không thể tải danh sách tài liệu đính kèm!");
+            setDocuments([]);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
+    // 🌟 HÀM XEM TRƯỚC (PREVIEW) FILE
+    const handlePreviewFile = async (filename: string) => {
+        if (!id) return;
+        const hide = message.loading(`Đang tải file ${filename}...`, 0);
+        try {
+            const blob = await drugBatchApi.getPreviewDocument(id, filename);
+            const fileURL = URL.createObjectURL(blob);
+            window.open(fileURL, '_blank');
+        } catch (error) {
+            console.error("Lỗi preview file:", error);
+            message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
+        } finally {
+            hide();
+        }
+    };
+
     useEffect(() => {
         const canTransfer = batchDetail?.status === "PRODUCED" || batchDetail?.status === "STORED";
 
@@ -299,6 +343,29 @@ export default function BatchDetail() {
                             <InfoRow label="Số hộp" value={`${batchDetail.totalBoxes || boxes.length} hộp`} />
                             <InfoRow label="Ngày sản xuất" value={batchDetail.productionDate ? dayjs(batchDetail.productionDate).format("DD/MM/YYYY") : "N/A"} />
                             <InfoRow label="Hạn sử dụng" value={batchDetail.expiryDate ? dayjs(batchDetail.expiryDate).format("DD/MM/YYYY") : "N/A"} />
+                            
+                            {/* 🌟 NÚT XEM TÀI LIỆU QC ĐƯỢC THÊM VÀO ĐÂY */}
+                            <InfoRow 
+                                label="Hồ sơ QC đính kèm" 
+                                value={
+                                    <Button type="dashed" icon={<FileTextOutlined />} size="small" onClick={handleOpenDocuments}>
+                                        Xem tài liệu đính kèm
+                                    </Button> as any
+                                } 
+                            />
+
+                            {/* 🌟 HIỂN THỊ TRẠNG THÁI QC */}
+                            <div style={{ marginTop: 24, padding: 16, background: '#fafafa', border: '1px solid #f0f0f0', borderRadius: 8 }}>
+                                <InfoRow 
+                                    label="TRẠNG THÁI KIỂM ĐỊNH" 
+                                    value={
+                                        <Tag color={qcStatusMap[batchDetail.qcStatus]?.color || "default"} style={{ fontSize: 16, padding: '4px 12px' }}>
+                                            {qcStatusMap[batchDetail.qcStatus]?.label || batchDetail.qcStatus}
+                                        </Tag> as any
+                                    } 
+                                />
+                            </div>
+
                         </Card>
                     </Col>
 
@@ -308,7 +375,7 @@ export default function BatchDetail() {
                                 columns={columns}
                                 dataSource={boxes}
                                 loading={loading}
-                                pagination={{ pageSize: 2 }}
+                                pagination={{ pageSize: 5 }}
                                 rowKey="boxId"
                                 scroll={{ x: 500 }}
                             />
@@ -317,6 +384,7 @@ export default function BatchDetail() {
                 </Row>
             </Flex>
 
+            {/* MODAL XUẤT LÔ THUỐC */}
             <Modal
                 title="Xác nhận xuất lô thuốc (Giao hàng)"
                 open={isTransferModalVisible}
@@ -364,6 +432,7 @@ export default function BatchDetail() {
                 </Form>
             </Modal>
 
+            {/* MODAL LỊCH SỬ VÒNG ĐỜI */}
             <Modal
                 title={`Lịch sử vòng đời lô thuốc: ${id}`}
                 open={isHistoryVisible}
@@ -390,6 +459,7 @@ export default function BatchDetail() {
                                                 <b>TxID:</b> <span style={{ wordBreak: 'break-all' }}>{item.txId}</span>
                                             </Text>
                                         </div>
+                                        
                                         <Flex vertical gap="small">
                                             <InfoRow 
                                                 label="Trạng thái hàng" 
@@ -401,7 +471,7 @@ export default function BatchDetail() {
                                                     <Tag color={qcStatusMap[item.data.qcStatus]?.color || "default"} style={{ margin: 0 }}>
                                                         {qcStatusMap[item.data.qcStatus]?.label || item.data.qcStatus}
                                                     </Tag> as any
-                                                } 
+                                                }
                                             />
                                         </Flex>
                                     </div>
@@ -411,6 +481,46 @@ export default function BatchDetail() {
                     </div>
                 )}
             </Modal>
+
+            {/* 🌟 MODAL DANH SÁCH FILE QC ĐÍNH KÈM */}
+            <Modal
+                title="Hồ sơ QC đính kèm"
+                open={isDocModalOpen}
+                onCancel={() => setIsDocModalOpen(false)}
+                footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
+                destroyOnClose
+            >
+                {loadingDocs ? (
+                    <Flex justify="center" style={{ padding: 24 }}>
+                        <Spin tip="Đang tải danh sách tài liệu..." />
+                    </Flex>
+                ) : (
+                    <List
+                        dataSource={documents}
+                        locale={{ emptyText: "Không có tài liệu nào được đính kèm." }}
+                        renderItem={(filename) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        type="primary" 
+                                        icon={<EyeOutlined />} 
+                                        size="small" 
+                                        onClick={() => handlePreviewFile(filename)}
+                                    >
+                                        Xem trước
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={<FileTextOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
+                                    title={<Text strong>{filename}</Text>}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                )}
+            </Modal>
+
         </Layout.Content>
     );
 }

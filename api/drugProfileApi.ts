@@ -20,7 +20,7 @@ export const drugProfileApi = {
     create: (data: any) => {
         return apiClient(`/drug-profiles`, { 
             method: "POST", 
-            body: JSON.stringify(data) 
+            body: data
         });
     },
 

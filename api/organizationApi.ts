@@ -1,3 +1,4 @@
+import keycloak from "utils/keycloak";
 import { apiClient } from "./apiClient";
 
 export const organizationApi = {
@@ -15,10 +16,10 @@ export const organizationApi = {
         return apiClient(`/organizations?${queryString}`, { method: "GET" }); 
     },
 
-    create: (data: any) => {
-        return apiClient(`/organizations`, {
-            method: "POST",
-            body: JSON.stringify(data),
+    create: (payload: any) => {
+        return apiClient('/organizations', { 
+            method: 'POST',
+            body: payload 
         });
     },
 
@@ -36,9 +37,29 @@ export const organizationApi = {
     createFacility: (orgId: string, data: any) => {
         return apiClient(`/organizations/${orgId}/facilities`, {
             method: "POST",
-            body: JSON.stringify(data),
+            body: data,
         });
     },
 
     getFacilities: (orgId: string) => apiClient(`/organizations/${orgId}/facilities`, { method: "GET" }),
+
+    getDocuments: (orgId: string) => {
+        return apiClient(`/organizations/${orgId}/documents`, { method: "GET" });
+    },
+
+    getPreviewDocument: async (orgId: string, filename: string) => {
+        const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+        const response = await fetch(`${BASE_URL}/organizations/${orgId}/documents/${filename}/preview`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${keycloak.token}` 
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Lỗi tải file: ${response.status}`);
+        }
+
+        return await response.blob();
+    },
 };

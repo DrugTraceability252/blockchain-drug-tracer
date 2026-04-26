@@ -1,0 +1,39 @@
+name: Build and Push Docker Image to Docker Hub
+
+# Workflow sẽ tự động chạy khi bạn push code lên nhánh 'main'
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Tải source code từ GitHub repository về môi trường chạy
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Cài đặt Docker Buildx (công cụ build hiện đại của Docker, hỗ trợ cache tốt hơn)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 3. Đăng nhập vào Docker Hub bằng thông tin đã lưu trong Secrets
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # 4. Thực hiện Build và Push image
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # Thay 'my-app' bằng tên ứng dụng của bạn.
+          # Bạn có thể thêm nhiều tag như: ${{ secrets.DOCKERHUB_USERNAME }}/my-app:${{ github.sha }}
+          tags: |
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/drug-traceability-frontend:latest
+            docker.io/${{ secrets.DOCKERHUB_USERNAME }}/drug-traceability-frontend:${{ github.sha }}

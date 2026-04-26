@@ -1,5 +1,5 @@
-import { BankOutlined, StopOutlined, CheckCircleOutlined, PaperClipOutlined } from "@ant-design/icons";
-import { Button, Card, Col, Divider, Flex, Layout, message, Modal, Row, Spin, Tag, Typography } from "antd";
+import { BankOutlined, StopOutlined, CheckCircleOutlined, PaperClipOutlined, FileTextOutlined, EyeOutlined } from "@ant-design/icons";
+import { Button, Card, Col, Divider, Flex, Layout, message, Modal, Row, Spin, Tag, Typography, List } from "antd";
 import { InfoRow } from "components/InfoRow/InfoRow";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useCallback, useEffect, useState } from "react";
@@ -32,6 +32,11 @@ export default function RegulatorCompanyDetail() {
     const [orgDetail, setOrgDetail] = useState<any>(null);
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+
+    // 🌟 STATE CHO TÍNH NĂNG XEM TÀI LIỆU
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [documents, setDocuments] = useState<string[]>([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
 
     const fetchOrgDetail = useCallback(async () => {
         if (!id) return;
@@ -85,6 +90,51 @@ export default function RegulatorCompanyDetail() {
             onOk: () => handleUpdateStatus("ACTIVE"),
         });
     }, [id]);
+
+    // 🌟 HÀM MỞ MODAL VÀ LẤY DANH SÁCH FILE
+    const handleOpenDocuments = async () => {
+        if (!id) return;
+        setIsDocModalOpen(true);
+        setLoadingDocs(true);
+        try {
+            const res = await organizationApi.getDocuments(id);
+            
+            let docList = [];
+            if (Array.isArray(res)) {
+                docList = res;
+            } else if (res && Array.isArray(res.data)) {
+                docList = res.data;
+            }
+
+            setDocuments(docList);
+            
+            if (docList.length === 0) {
+                message.warning("Tổ chức này chưa có tài liệu nào được đính kèm!");
+            }
+        } catch (error) {
+            console.error("Lỗi lấy danh sách file:", error);
+            message.error("Không thể tải danh sách tài liệu đính kèm!");
+            setDocuments([]);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
+    // 🌟 HÀM XEM TRƯỚC (PREVIEW) FILE
+    const handlePreviewFile = async (filename: string) => {
+        if (!id) return;
+        const hide = message.loading(`Đang tải file ${filename}...`, 0);
+        try {
+            const blob = await organizationApi.getPreviewDocument(id, filename);
+            const fileURL = URL.createObjectURL(blob);
+            window.open(fileURL, '_blank');
+        } catch (error) {
+            console.error("Lỗi preview file:", error);
+            message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
+        } finally {
+            hide();
+        }
+    };
 
     useEffect(() => {
         if (!orgDetail) return;
@@ -163,22 +213,61 @@ export default function RegulatorCompanyDetail() {
                                     <InfoRow label="Địa chỉ trụ sở chính" value={orgDetail.address || "Chưa cập nhật"} />
                                     
                                     <Title level={5} style={{ marginTop: 24, marginBottom: 16 }}>Hồ sơ đính kèm</Title>
-                                    {orgDetail.documentHashes && orgDetail.documentHashes.length > 0 ? (
-                                        orgDetail.documentHashes.map((hash: string, index: number) => (
-                                            <div key={index} style={{ marginBottom: 8, padding: '8px 12px', background: '#fafafa', borderRadius: 6, border: '1px dashed #d9d9d9', display: 'flex', alignItems: 'center', gap: 8 }}>
-                                                <PaperClipOutlined style={{ color: '#1677ff' }}/>
-                                                <Text copyable style={{ color: '#1677ff' }}>Hồ sơ số 1: {hash.substring(0, 20)}...</Text>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <Text type="secondary">Không có tài liệu đính kèm</Text>
-                                    )}
+                                    
+                                    {/* 🌟 NÚT XEM TÀI LIỆU (Thay cho việc render hash) */}
+                                    <Button 
+                                        type="dashed" 
+                                        icon={<FileTextOutlined />} 
+                                        onClick={handleOpenDocuments}
+                                    >
+                                        Xem tài liệu đính kèm (Quyết định, Giấy phép...)
+                                    </Button>
+
                                 </Col>
                             </Row>
                         </div>
                     </BorderCard>
                 </Col>
             </Row>
+
+            {/* 🌟 MODAL DANH SÁCH FILE */}
+            <Modal
+                title={`Tài liệu đính kèm - ${orgDetail.orgName}`}
+                open={isDocModalOpen}
+                onCancel={() => setIsDocModalOpen(false)}
+                footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
+                destroyOnClose
+            >
+                {loadingDocs ? (
+                    <Flex justify="center" style={{ padding: 24 }}>
+                        <Spin tip="Đang tải danh sách tài liệu..." />
+                    </Flex>
+                ) : (
+                    <List
+                        dataSource={documents}
+                        locale={{ emptyText: "Không có tài liệu nào được đính kèm." }}
+                        renderItem={(filename) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        type="primary" 
+                                        icon={<EyeOutlined />} 
+                                        size="small" 
+                                        onClick={() => handlePreviewFile(filename)}
+                                    >
+                                        Xem trước
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={<FileTextOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
+                                    title={<Text strong>{filename}</Text>}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                )}
+            </Modal>
         </Layout.Content>
     );
 }

@@ -1,3 +1,4 @@
+import keycloak from "utils/keycloak";
 import { apiClient } from "./apiClient";
 
 export const drugBatchApi = {
@@ -8,6 +9,7 @@ export const drugBatchApi = {
         facilityId?: string;
         qcStatus?: string;
         status?: string;
+        currentFacilityId?: string;
     }) => {
         const cleanParams = Object.fromEntries(
             Object.entries(params).filter(([_, v]) => v != null && v !== "")
@@ -21,10 +23,10 @@ export const drugBatchApi = {
         return apiClient(`/drug-batches/${batchId}`, { method: "GET" });
     },
 
-    create: (data: any) => {
-        return apiClient(`/drug-batches`, { 
-            method: "POST", 
-            body: JSON.stringify(data) 
+    create: (payload: any) => {
+        return apiClient('/drug-batches', { 
+            method: 'POST',
+            body: payload 
         });
     },
 
@@ -64,5 +66,29 @@ export const drugBatchApi = {
     
     getHistory: (batchId: string) => {
         return apiClient(`/drug-batches/${batchId}/history`, { method: "GET" });
+    },
+
+    getTransportHistory: (batchId: string) => {
+        return apiClient(`/transports/batch/${batchId}/history`, { method: 'GET' });
+    },
+
+    getDocuments: (batchId: string) => {
+        return apiClient(`/drug-batches/${batchId}/documents`, { method: "GET" });
+    },
+
+    getPreviewDocument: async (batchId: string, filename: string) => {
+        const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api";
+        const response = await fetch(`${BASE_URL}/drug-batches/${batchId}/documents/${filename}/preview`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${keycloak.token}` 
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Lỗi tải file: ${response.status}`);
+        }
+
+        return await response.blob();
     },
 };

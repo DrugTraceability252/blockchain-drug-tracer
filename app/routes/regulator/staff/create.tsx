@@ -1,4 +1,5 @@
-import { Button, Form, Input, Layout, Row, Col, Select, message, Spin } from "antd";
+import { InboxOutlined } from "@ant-design/icons";
+import { Button, Form, Input, Layout, Row, Col, Select, message, Upload, Divider } from "antd";
 import { organizationApi } from "api/organizationApi";
 import { facilityApi } from "api/facilityApi";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
@@ -6,6 +7,8 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "auth/useAuth";
 import { authApi } from "api/employeeApi";
+
+const { Dragger } = Upload;
 
 export default function RegulatorStaffCreate() {
     const [form] = Form.useForm();
@@ -19,6 +22,9 @@ export default function RegulatorStaffCreate() {
     const [facilityList, setFacilityList] = useState<any[]>([]);
     const [loadingOrgs, setLoadingOrgs] = useState(false);
     const [loadingFacilities, setLoadingFacilities] = useState(false);
+
+    // 🌟 STATE CHỨA DANH SÁCH FILE UPLOAD
+    const [fileList, setFileList] = useState<any[]>([]);
 
     const selectedOrgType = Form.useWatch('orgType', form);
     const selectedOrgId = Form.useWatch('orgId', form);
@@ -69,7 +75,8 @@ export default function RegulatorStaffCreate() {
                 groupString = `${values.orgType}/${values.orgId || ''}/${values.facilityId || ''}/${values.role}`;
             }
 
-            const payload = {
+            // 1. TẠO JSON PAYLOAD
+            const userPayload = {
                 username: values.username,
                 password: values.password, 
                 firstName: values.firstName,
@@ -81,7 +88,19 @@ export default function RegulatorStaffCreate() {
                 avatarUrl: "string",
             };
 
-            await authApi.register(payload); 
+            // 🌟 2. BỌC VÀO FORMDATA VÀ KẸP FILE
+            const formData = new FormData();
+            formData.append("request", JSON.stringify(userPayload));
+
+            fileList.forEach(file => {
+                if (file.originFileObj) {
+                    formData.append("files", file.originFileObj);
+                }
+            });
+
+            // 3. GỬI LÊN API
+            await authApi.register(formData); 
+            
             message.success("Tạo tài khoản cán bộ thành công!");
             navigate("/regulator/staff"); 
             
@@ -196,6 +215,25 @@ export default function RegulatorStaffCreate() {
                             </Col>
                         </>
                     )}
+                </Row>
+
+                <Divider dashed />
+
+                {/* 🌟 KHU VỰC UPLOAD FILE */}
+                <Row>
+                    <Col span={24}>
+                        <Form.Item label="Hồ sơ minh chứng (CCCD, Quyết định bổ nhiệm...)">
+                            <Dragger 
+                                multiple={true} 
+                                beforeUpload={() => false}
+                                fileList={fileList}
+                                onChange={(info) => setFileList(info.fileList)}
+                            >
+                                <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+                                <p className="ant-upload-text">Kéo thả hoặc nhấp để tải file PDF/Ảnh lên</p>
+                            </Dragger>
+                        </Form.Item>
+                    </Col>
                 </Row>
             </Form>
         </Layout.Content>
