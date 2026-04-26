@@ -22,13 +22,13 @@ export default function RegulatorWarehouseCreateProfile() {
     const navigate = useNavigate();
     const { user } = useAuth();
     
-    // 🌟 STATES QUẢN LÝ TỔ CHỨC & CƠ SỞ
+    const [fileList, setFileList] = useState<any[]>([]);
+
     const [orgList, setOrgList] = useState<any[]>([]);
     const [facilities, setFacilities] = useState<any[]>([]);
     const [loadingOrgs, setLoadingOrgs] = useState(false);
     const [loadingFacilities, setLoadingFacilities] = useState(false);
 
-    // 1. LẤY DANH SÁCH TỔ CHỨC LÚC VÀO TRANG
     useEffect(() => {
         const fetchOrgs = async () => {
             setLoadingOrgs(true);
@@ -44,7 +44,7 @@ export default function RegulatorWarehouseCreateProfile() {
         fetchOrgs();
     }, []);
 
-    // 2. KHI CHỌN TỔ CHỨC -> TẢI DANH SÁCH CƠ SỞ TƯƠNG ỨNG
+
     const handleOrgChange = async (orgId: string) => {
         form.setFieldsValue({ manufacturerFacilityId: undefined }); // Xóa cơ sở cũ nếu có
         setFacilities([]);
@@ -78,13 +78,17 @@ export default function RegulatorWarehouseCreateProfile() {
     const onFinish = async (values: any) => {
         setLoading(true);
         try {
-            const documentHashes = values.documentHashes?.map((f: any) => f.name) || ["mock_hash_abc123"];
+            let fileNames = [];
+            if (values.documentHashes && values.documentHashes.length > 0) {
+                fileNames = values.documentHashes.map((f: any) => f.name);
+            } else {
+                fileNames = ["no_document"];
+            }
 
             const payload = {
                 drugName: values.drugName,
-                // 🌟 Lấy OrgId và FacilityId từ Form (do Regulator tự chọn)
+                
                 manufacturerOrgId: values.manufacturerOrgId, 
-                manufacturerFacilityId: values.manufacturerFacilityId, 
                 
                 licenseNumber: values.licenseNumber,
                 licenseExpiry: values.licenseExpiry ? dayjs(values.licenseExpiry).toISOString() : null,
@@ -98,10 +102,19 @@ export default function RegulatorWarehouseCreateProfile() {
                 packaging: values.packaging,
                 qualityStandard: values.qualityStandard,
                 shelfLife: values.shelfLife ? String(values.shelfLife).trim() : "",
-                documentHashes: documentHashes
+                documentHashes: fileNames
             };
 
-            await drugProfileApi.create(payload);
+            const formData = new FormData();
+            formData.append("request", JSON.stringify(payload));
+            const files = values.documentHashes || [];
+            files.forEach((f: any) => {
+                if (f.originFileObj) {
+                    formData.append("files", f.originFileObj);
+                }
+            });
+
+            await drugProfileApi.create(formData);
             message.success("Tạo hồ sơ thuốc thành công!");
             navigate("/regulator/warehouse/profile");
 

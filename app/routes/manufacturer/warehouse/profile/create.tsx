@@ -19,7 +19,6 @@ export default function ManufacturerWarehouseCreateProfile() {
     const { setHeaderActions } = useHeaderActions();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-
     const { user } = useAuth();
 
     useEffect(() => {
@@ -44,9 +43,7 @@ export default function ManufacturerWarehouseCreateProfile() {
 
         setLoading(true);
         try {
-            const documentHashes = values.documentHashes?.map((f: any) => f.name) || ["mock_hash_abc123"];
-
-            const payload = {
+            const requestPayload = {
                 drugName: values.drugName,
                 manufacturerOrgId: user.orgId,
                 licenseNumber: values.licenseNumber,
@@ -61,11 +58,23 @@ export default function ManufacturerWarehouseCreateProfile() {
                 packaging: values.packaging,
                 qualityStandard: values.qualityStandard,
                 shelfLife: values.shelfLife ? String(values.shelfLife).trim() : "",
-                documentHashes: documentHashes
             };
 
-            await drugProfileApi.create(payload);
-            message.success("Tạo hồ sơ thuốc thành công!");
+            const formData = new FormData();
+            
+            formData.append("request", JSON.stringify(requestPayload));
+
+            if (values.documentHashes && values.documentHashes.length > 0) {
+                values.documentHashes.forEach((fileItem: any) => {
+                    if (fileItem.originFileObj) {
+                        formData.append("files", fileItem.originFileObj);
+                    }
+                });
+            }
+
+            await drugProfileApi.createWithFiles(formData);
+            
+            message.success("Tạo hồ sơ thuốc và tải file thành công!");
             navigate("/manufacturer/warehouse/profile");
 
         } catch (error) {
@@ -78,11 +87,7 @@ export default function ManufacturerWarehouseCreateProfile() {
 
     return (
         <Layout.Content style={{ padding: '12px'}}>
-            <Form
-                form={form}
-                layout="vertical"
-                onFinish={onFinish}
-            >
+            <Form form={form} layout="vertical" onFinish={onFinish}>
                 <Row gutter={[24, 12]}>
                     {/* BLOCK 1: THÔNG TIN CƠ BẢN */}
                     <Col span={24}>

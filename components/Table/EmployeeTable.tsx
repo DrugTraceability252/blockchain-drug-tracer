@@ -1,6 +1,6 @@
 import { Table, Pagination, Flex, Button, Modal, Descriptions, Tag, Typography } from "antd";
 import { useState } from "react";
-import { EyeOutlined } from "@ant-design/icons";
+import { EyeOutlined, FileTextOutlined } from "@ant-design/icons";
 import { formatPhoneNumber } from "utils/phoneformat";
 import type { ColumnsType } from "antd/es/table";
 
@@ -10,10 +10,11 @@ interface EmployeeTableProps {
     dataSource: any[];
     loading: boolean;
     pagination: any;
-    onChange: (page: number, pageSize: number) => void;
+    onChange: (pagination: any) => void;
+    onViewDocuments?: (userId: string) => void;
 }
 
-export const getColumns = (openModal: (record: any) => void): ColumnsType<any> => [
+export const getColumns = (openModal: (record: any) => void, onViewDocuments?: (userId: string) => void): ColumnsType<any> => [
     {
         title: "Họ và tên",
         key: "fullName",
@@ -77,17 +78,26 @@ export const getColumns = (openModal: (record: any) => void): ColumnsType<any> =
         key: "action",
         align: 'center',
         render: (_, record) => (
-            <Button 
-                type="text" 
-                icon={<EyeOutlined />} 
-                style={{ color: '#1677ff' }}
-                onClick={() => openModal(record)}
-            />
+            <Flex gap="small">
+                <Button 
+                    type="text" 
+                    icon={<EyeOutlined />} 
+                    style={{ color: '#1677ff' }}
+                    onClick={() => openModal(record)}
+                />
+            
+                <Button 
+                    type="dashed" 
+                    icon={<FileTextOutlined />} 
+                    onClick={() => onViewDocuments && onViewDocuments(record.id)}
+                    title="Xem tài liệu đính kèm"
+                >File hồ sơ</Button>
+            </Flex>
         ),
     },
 ];
 
-export default function EmployeeTable({ dataSource, loading, pagination, onChange }: EmployeeTableProps) {
+export default function EmployeeTable({ dataSource, loading, pagination, onChange, onViewDocuments }: EmployeeTableProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<any>(null);
 
@@ -121,7 +131,7 @@ export default function EmployeeTable({ dataSource, loading, pagination, onChang
         <Flex vertical style={{ height: "100%" }}>
             <div style={{ flex: 1, overflow: "hidden" }}>
                 <Table
-                    columns={getColumns(openModal)}
+                    columns={getColumns(openModal, onViewDocuments)}
                     dataSource={dataSource}
                     rowKey="id"
                     loading={loading}
@@ -136,7 +146,7 @@ export default function EmployeeTable({ dataSource, loading, pagination, onChang
                     current={pagination.current || 1}
                     pageSize={pagination.pageSize || 10}
                     total={pagination.total || 0}
-                    onChange={(page, pageSize) => onChange(page, pageSize)} // 🌟 Nối thẳng lên hàm onChange của component cha
+                    onChange={(page, pageSize) => onChange({ current: page, pageSize })} // 🌟 Nối thẳng lên hàm onChange của component cha
                     showSizeChanger={false}
                     showQuickJumper={false}
                 />

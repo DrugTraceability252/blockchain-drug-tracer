@@ -1,4 +1,7 @@
 import { apiClient } from "./apiClient";
+import keycloak from "utils/keycloak";
+
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
 
 export const drugProfileApi = {
     getAll: (params: { page: number; size: number; manufacturerOrgId?: string; drugType?: string | null }) => {
@@ -17,7 +20,7 @@ export const drugProfileApi = {
     create: (data: any) => {
         return apiClient(`/drug-profiles`, { 
             method: "POST", 
-            body: JSON.stringify(data) 
+            body: data
         });
     },
 
@@ -25,5 +28,34 @@ export const drugProfileApi = {
         return apiClient(`/drug-profiles/${drugId}/status?status=${status}`, {
             method: "PATCH" 
         });
+    },
+
+    createWithFiles: (formData: FormData) => {
+        return apiClient(`/drug-profiles`, { 
+            method: "POST", 
+            body: formData 
+        });
+    },
+
+    getDocuments: (drugId: string) => {
+        return apiClient(`/drug-profiles/${drugId}/documents`, { method: "GET" });
+    },
+
+    getPreviewDocument: async (drugId: string, filename: string) => {
+        const headers: Record<string, string> = {};
+        if (keycloak && keycloak.token) {
+            headers['Authorization'] = `Bearer ${keycloak.token}`;
+        }
+
+        const response = await fetch(`${BASE_URL}/drug-profiles/${drugId}/documents/${filename}/preview`, {
+            method: 'GET',
+            headers
+        });
+
+        if (!response.ok) {
+            throw new Error(`Lỗi tải file: ${response.status}`);
+        }
+
+        return await response.blob();
     }
 };

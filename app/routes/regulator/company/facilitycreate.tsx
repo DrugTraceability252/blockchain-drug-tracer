@@ -1,8 +1,11 @@
-import { Button, Col, Form, Input, Layout, Row, Select, message, Typography } from "antd";
+import { Button, Col, Form, Input, Layout, Row, Select, message, Typography, Upload } from "antd";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect, useState, useCallback } from "react";
-import { useNavigate } from "react-router"; // 🌟 Bỏ useParams
+import { useNavigate } from "react-router";
 import { organizationApi } from "api/organizationApi";
+import { InboxOutlined } from "@ant-design/icons";
+
+const { Dragger } = Upload;
 
 const { Title } = Typography;
 
@@ -14,14 +17,14 @@ export default function FacilityCreate() {
     const [loading, setLoading] = useState(false);
     const [companies, setCompanies] = useState<any[]>([]);
     const [fetchingOrgs, setFetchingOrgs] = useState(false);
+    const [fileList, setFileList] = useState<any[]>([]);
 
     const fetchCompanies = useCallback(async () => {
         setFetchingOrgs(true);
         try {
-            const response = await organizationApi.getAll({ page: 0, size: 1000 }); // Lấy số lượng lớn
+            const response = await organizationApi.getAll({ page: 0, size: 1000 }); 
             const allData = response.data || response.content || [];
             
-            // Tùy chọn: Bạn có thể chỉ lọc những công ty đã được duyệt (ACTIVE)
             const activeOrgs = allData.filter((org: any) => org.status === "ACTIVE");
             setCompanies(activeOrgs);
         } catch (error) {
@@ -61,7 +64,16 @@ export default function FacilityCreate() {
                 contactPhone: values.contactPhone
             };
 
-            await organizationApi.createFacility(values.orgId, payload);
+            const facilityFormData = new FormData();
+            facilityFormData.append("request", JSON.stringify(payload));
+
+            fileList.forEach(file => {
+                if (file.originFileObj) {
+                    facilityFormData.append("files", file.originFileObj);
+                }
+            });
+
+            await organizationApi.createFacility(values.orgId, facilityFormData);
             message.success("Thêm cơ sở vật chất mới thành công!");
             
             navigate(`/regulator/company/${values.orgId}`);
@@ -118,7 +130,7 @@ export default function FacilityCreate() {
                             <Select size="large" placeholder="-- Chọn loại --">
                                 <Select.Option value="FACTORY">Nhà máy sản xuất</Select.Option>
                                 <Select.Option value="WAREHOUSE">Kho bãi</Select.Option>
-                                <Select.Option value="PHARMACY_STORE">Cửa hàng thuốc</Select.Option>
+                                <Select.Option value="STORE">Cửa hàng thuốc</Select.Option>
                                 <Select.Option value="HOSPITAL_DEPT">Kho bệnh viện</Select.Option>
                             </Select>
                         </Form.Item>
@@ -139,6 +151,21 @@ export default function FacilityCreate() {
                     <Col xs={24}>
                         <Form.Item label="Địa chỉ thực tế" name="address" rules={[{ required: true }]}>
                             <Input.TextArea rows={3} size="large" placeholder="Nhập địa chỉ..." />
+                        </Form.Item>
+                    </Col>
+                </Row>
+                <Row>
+                    <Col span={24}>
+                        <Form.Item label="Hồ sơ minh chứng (Giấy phép kinh doanh, GPP, GSP, GMP...)">
+                            <Dragger 
+                                multiple={true} 
+                                beforeUpload={() => false}
+                                fileList={fileList}
+                                onChange={(info) => setFileList(info.fileList)}
+                            >
+                                <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+                                <p className="ant-upload-text">Kéo thả hoặc nhấp để tải file PDF/Ảnh lên</p>
+                            </Dragger>
                         </Form.Item>
                     </Col>
                 </Row>

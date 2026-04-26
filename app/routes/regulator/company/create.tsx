@@ -13,6 +13,8 @@ export default function RegulatorCompanyCreate() {
     const { setHeaderActions } = useHeaderActions();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
+    
+    const [fileList, setFileList] = useState<any[]>([]);
 
     useEffect(() => {
         setHeaderActions(
@@ -39,11 +41,18 @@ export default function RegulatorCompanyCreate() {
                 address: values.address,
                 contactEmail: values.contactEmail,
                 contactPhone: values.contactPhone,
-                documentHashes: ["hash_dummy_1"]
             };
 
-            const orgResponse = await organizationApi.create(orgPayload);
+            const formData = new FormData();
+            formData.append("request", JSON.stringify(orgPayload));
             
+            fileList.forEach(file => {
+                if (file.originFileObj) {
+                    formData.append("files", file.originFileObj);
+                }
+            });
+
+            const orgResponse = await organizationApi.create(formData);
             const newOrgId = orgResponse.data?.orgId || orgResponse.orgId;
 
             if (!newOrgId) {
@@ -58,15 +67,25 @@ export default function RegulatorCompanyCreate() {
                 contactPhone: values.facilityContactPhone
             };
 
-            await organizationApi.createFacility(newOrgId, facilityPayload);
+            const facilityFormData = new FormData();
+            facilityFormData.append("request", JSON.stringify(facilityPayload));
+
+            fileList.forEach(file => {
+                if (file.originFileObj) {
+                    facilityFormData.append("files", file.originFileObj);
+                }
+            });
+
+            await organizationApi.createFacility(newOrgId, facilityFormData);
 
             message.success("Đăng ký tổ chức và cơ sở thành công!");
+            
             if (orgPayload.orgType === "MANUFACTURER") {
-                navigate("/manufacturer/dashboard");
+                navigate("/regulator/manufacturer");
             } else if (orgPayload.orgType === "DISTRIBUTOR") {
-                navigate("/distributor/dashboard");
+                navigate("/regulator/distributor");
             } else if (orgPayload.orgType === "PHARMACY") {
-                navigate("/pharmacy/dashboard");
+                navigate("/regulator/pharmacy");
             } 
         } catch (error: any) {
             console.error(error);
@@ -149,7 +168,7 @@ export default function RegulatorCompanyCreate() {
                             <Select size="large" placeholder="-- Chọn loại --">
                                 <Select.Option value="FACTORY">Nhà máy sản xuất (FACTORY)</Select.Option>
                                 <Select.Option value="WAREHOUSE">Kho bãi (WAREHOUSE)</Select.Option>
-                                <Select.Option value="PHARMACY_STORE">Cửa hàng thuốc (PHARMACY_STORE)</Select.Option>
+                                <Select.Option value="STORE">Cửa hàng thuốc (PHARMACY_STORE)</Select.Option>
                                 <Select.Option value="HOSPITAL_DEPT">Kho bệnh viện (HOSPITAL_DEPT)</Select.Option>
                             </Select>
                         </Form.Item>
@@ -179,7 +198,12 @@ export default function RegulatorCompanyCreate() {
                 <Row>
                     <Col span={24}>
                         <Form.Item label="Hồ sơ minh chứng (Giấy phép kinh doanh, GPP, GSP, GMP...)">
-                            <Dragger multiple={true} beforeUpload={() => false}>
+                            <Dragger 
+                                multiple={true} 
+                                beforeUpload={() => false}
+                                fileList={fileList}
+                                onChange={(info) => setFileList(info.fileList)}
+                            >
                                 <p className="ant-upload-drag-icon"><InboxOutlined /></p>
                                 <p className="ant-upload-text">Kéo thả hoặc nhấp để tải file PDF/Ảnh lên</p>
                             </Dragger>

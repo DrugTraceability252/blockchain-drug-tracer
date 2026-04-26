@@ -1,11 +1,13 @@
-import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { Button, Cascader, Flex, Input, Layout, message } from "antd";
+import { FilterOutlined, PlusOutlined, SearchOutlined, EyeOutlined, FileTextOutlined } from "@ant-design/icons";
+import { Button, Cascader, Flex, Input, Layout, message, Modal, Spin, List, Typography } from "antd";
 import EmployeeTable from "components/Table/EmployeeTable";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router";
-import { employeeApi } from "api/employeeApi";
+import { authApi, employeeApi } from "api/employeeApi";
 import { useAuth } from "auth/useAuth";
+
+const { Text } = Typography;
 
 export default function RegulatorStaff() {
     const { setHeaderActions } = useHeaderActions();
@@ -21,6 +23,11 @@ export default function RegulatorStaff() {
         search: "",
         role: undefined as string | undefined
     });
+
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [documents, setDocuments] = useState<string[]>([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
     const fetchEmployees = useCallback(async () => {
         if (!user) return; 
@@ -44,7 +51,8 @@ export default function RegulatorStaff() {
         } finally {
             setLoading(false);
         }
-    }, [queryParams]);
+        
+    }, [queryParams, user?.orgId]);
 
     useEffect(() => {
         fetchEmployees();
@@ -78,6 +86,49 @@ export default function RegulatorStaff() {
             page: pagination.current,
             size: pagination.pageSize,
         }));
+    };
+
+    const handleOpenDocuments = async (userId: string) => {
+        setSelectedUserId(userId);
+        setIsDocModalOpen(true);
+        setLoadingDocs(true);
+        try {
+            const res = await authApi.getDocuments(userId);
+            
+            let docList = [];
+            if (Array.isArray(res)) {
+                docList = res;
+            } else if (res && Array.isArray(res.data)) {
+                docList = res.data;
+            }
+
+            setDocuments(docList);
+            
+            if (docList.length === 0) {
+                message.warning("Tài khoản này chưa có tài liệu nào được đính kèm!");
+            }
+        } catch (error) {
+            console.error("Lỗi lấy danh sách file:", error);
+            message.error("Không thể tải danh sách tài liệu đính kèm!");
+            setDocuments([]);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
+    const handlePreviewFile = async (filename: string) => {
+        if (!selectedUserId) return;
+        const hide = message.loading(`Đang tải file ${filename}...`, 0);
+        try {
+            const blob = await authApi.getPreviewDocument(selectedUserId, filename);
+            const fileURL = URL.createObjectURL(blob);
+            window.open(fileURL, '_blank');
+        } catch (error) {
+            console.error("Lỗi preview file:", error);
+            message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
+        } finally {
+            hide();
+        }
     };
 
     return (
@@ -123,8 +174,48 @@ export default function RegulatorStaff() {
                         showSizeChanger: true
                     }}
                     onChange={handleTableChange}
+                    onViewDocuments={handleOpenDocuments}
                 />
             </Layout.Content>
+
+            {/* 🌟 MODAL DANH SÁCH FILE */}
+            <Modal
+                title="Tài liệu đính kèm"
+                open={isDocModalOpen}
+                onCancel={() => setIsDocModalOpen(false)}
+                footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
+                destroyOnClose
+            >
+                {loadingDocs ? (
+                    <Flex justify="center" style={{ padding: 24 }}>
+                        <Spin tip="Đang tải danh sách tài liệu..." />
+                    </Flex>
+                ) : (
+                    <List
+                        dataSource={documents}
+                        locale={{ emptyText: "Không có tài liệu nào được đính kèm." }}
+                        renderItem={(filename) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        type="primary" 
+                                        icon={<EyeOutlined />} 
+                                        size="small" 
+                                        onClick={() => handlePreviewFile(filename)}
+                                    >
+                                        Xem trước
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={<FileTextOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
+                                    title={<Text strong>{filename}</Text>}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                )}
+            </Modal>
         </>
     );
 }

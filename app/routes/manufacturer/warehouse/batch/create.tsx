@@ -1,5 +1,5 @@
-import { UploadOutlined } from "@ant-design/icons";
-import { Button, Form, Input, InputNumber, Layout, Row, Col, Select, Card, DatePicker, Upload, message } from "antd";
+import { UploadOutlined, InboxOutlined } from "@ant-design/icons";
+import { Button, Form, InputNumber, Layout, Row, Col, Select, Card, DatePicker, Upload, message } from "antd";
 import { drugBatchApi } from "api/drugBatchApi";
 import { drugProfileApi } from "api/drugProfileApi";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
@@ -9,10 +9,7 @@ import { useAuth } from "auth/useAuth";
 import dayjs from "dayjs";
 import { organizationApi } from "api/organizationApi";
 
-const normFile = (e: any) => {
-    if (Array.isArray(e)) return e;
-    return e?.fileList;
-};
+const { Dragger } = Upload;
 
 export default function ManufacturerWarehouseCreateBatch() {
     const [form] = Form.useForm();
@@ -28,26 +25,21 @@ export default function ManufacturerWarehouseCreateBatch() {
     const [facilities, setFacilities] = useState<any[]>([]);
     const [loadingFacilities, setLoadingFacilities] = useState(false);
 
+    const [fileList, setFileList] = useState<any[]>([]);
+
     useEffect(() => {
         const fetchDrugs = async () => {
             if (!user?.orgId) return;
             setLoadingDrugs(true);
             try {
                 const res = await drugProfileApi.getAll({ page: 1, size: 100 });
-                
                 const allDrugs = res.data?.data || res.data || res.content || [];
                 
-                console.log("1. Tổng số thuốc tải về:", allDrugs.length);
-                console.log("2. Mã công ty của tôi (user.orgId):", user.orgId);
-
                 const myDrugs = allDrugs.filter((d: any) => {
                     const isMyCompany = d.manufacturerOrgId === user.orgId;
                     const isApproved = d.approveStatus === "APPROVED";
-                    
                     return isMyCompany && isApproved;
                 });
-
-                console.log("3. Số thuốc thỏa mãn điều kiện vào Dropdown:", myDrugs.length);
                 
                 setDrugs(myDrugs);
             } catch (error) {
@@ -82,9 +74,14 @@ export default function ManufacturerWarehouseCreateBatch() {
 
         setLoading(true);
         try {
-            const documentHashes = values.documentHashes?.map((f: any) => f.name) || ["hash_demo_batch"];
+            let fileNames = [];
+            if (values.documentHashes && values.documentHashes.length > 0) {
+                fileNames = values.documentHashes.map((f: any) => f.name);
+            } else {
+                fileNames = ["no_document"];
+            }
 
-            const payload = {
+            const batchPayload = {
                 drugId: values.drugId,
                 manufacturerFacilityId: values.manufacturerFacilityId,
                 manufacturerOrgId: user.orgId, 
@@ -94,16 +91,28 @@ export default function ManufacturerWarehouseCreateBatch() {
                 
                 totalBoxes: Number(values.totalBoxes), 
                 unit: values.unit,
-                documentHashes: documentHashes
+                
+                documentHashes: fileNames 
             };
 
-            await drugBatchApi.create(payload);
+            const formData = new FormData();
+            formData.append("request", JSON.stringify(batchPayload));
+
+            const files = values.documentHashes || [];
+            files.forEach((f: any) => {
+                if (f.originFileObj) {
+                    formData.append("files", f.originFileObj);
+                }
+            });
+
+            await drugBatchApi.create(formData);
+            
             message.success("Tạo lô thuốc mới thành công!");
             navigate("/manufacturer/warehouse/batch");
 
         } catch (error) {
             console.error("Lỗi khi tạo lô:", error);
-            message.error("Có lỗi xảy ra từ máy chủ (500). Vui lòng kiểm tra lại log Backend!");
+            message.error("Có lỗi xảy ra khi tạo Lô thuốc. Vui lòng kiểm tra lại!");
         } finally {
             setLoading(false);
         }
@@ -250,15 +259,17 @@ export default function ManufacturerWarehouseCreateBatch() {
                             <div style={{padding: 8}}>
                             <Row gutter={16}>
                                 <Col span={24}>
-                                    <Form.Item
-                                        label="Hồ sơ kiểm nghiệm lô (QC Documents)"
-                                        name="documentHashes"
-                                        valuePropName="fileList"
-                                        getValueFromEvent={normFile}
-                                    >
-                                        <Upload name="file" beforeUpload={() => false} multiple>
-                                            <Button size="large" icon={<UploadOutlined />}>Tải lên PDF/Hình ảnh</Button>
-                                        </Upload>
+                                    <Form.Item label="Hồ sơ kiểm nghiệm lô (QC Documents, Phiếu xuất xưởng...)">
+                                        {/* 🌟 CẬP NHẬT LẠI THÀNH DRAGGER ĐỂ CHỨA FILE */}
+                                        <Dragger 
+                                            multiple={true} 
+                                            beforeUpload={() => false}
+                                            fileList={fileList}
+                                            onChange={(info) => setFileList(info.fileList)}
+                                        >
+                                            <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+                                            <p className="ant-upload-text">Kéo thả hoặc nhấp để tải file PDF/Ảnh lên</p>
+                                        </Dragger>
                                     </Form.Item>
                                 </Col>
                             </Row>

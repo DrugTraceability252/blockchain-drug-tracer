@@ -1,5 +1,5 @@
-import { EyeOutlined, CheckOutlined, CloseOutlined } from "@ant-design/icons";
-import { Button, Modal, Descriptions, Table, Tag, Space, Popconfirm, Typography, message, Flex } from "antd";
+import { EyeOutlined, CheckOutlined, CloseOutlined, FileTextOutlined } from "@ant-design/icons";
+import { Button, Modal, Descriptions, Table, Tag, Space, Popconfirm, Typography, message, Flex, List, Spin } from "antd";
 import { useEffect, useState, useCallback } from "react";
 import { authApi, employeeApi } from "api/employeeApi";
 import { useAuth } from "auth/useAuth";
@@ -18,6 +18,10 @@ export default function RegulatorStaffApprove() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedUser, setSelectedUser] = useState<any>(null);
+
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [documents, setDocuments] = useState<string[]>([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
 
     const fetchPendingUsers = useCallback(async () => {
         if (!isLoggedIn) return;
@@ -66,6 +70,48 @@ export default function RegulatorStaffApprove() {
     const closeModal = () => {
         setIsModalOpen(false);
         setSelectedUser(null);
+    };
+
+    const handleOpenDocuments = async (userId: string) => {
+        setIsDocModalOpen(true);
+        setLoadingDocs(true);
+        try {
+            const res = await authApi.getDocuments(userId);
+            
+            let docList = [];
+            if (Array.isArray(res)) {
+                docList = res;
+            } else if (res && Array.isArray(res.data)) {
+                docList = res.data;
+            }
+
+            setDocuments(docList);
+            
+            if (docList.length === 0) {
+                message.warning("Tài khoản này chưa có tài liệu nào được đính kèm!");
+            }
+        } catch (error) {
+            console.error("Lỗi lấy danh sách file:", error);
+            message.error("Không thể tải danh sách tài liệu đính kèm!");
+            setDocuments([]);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
+    const handlePreviewFile = async (filename: string) => {
+        if (!selectedUser?.id) return;
+        const hide = message.loading(`Đang tải file ${filename}...`, 0);
+        try {
+            const blob = await authApi.getPreviewDocument(selectedUser.id, filename);
+            const fileURL = URL.createObjectURL(blob);
+            window.open(fileURL, '_blank');
+        } catch (error) {
+            console.error("Lỗi preview file:", error);
+            message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
+        } finally {
+            hide();
+        }
     };
 
     const handleApprove = async (userId: string) => {
@@ -169,6 +215,7 @@ export default function RegulatorStaffApprove() {
                 pagination={{ pageSize: 10 }}
             />
 
+            {/* MODAL CHI TIẾT USER */}
             <Modal
                 title={<Title level={4} style={{ margin: 0 }}>Hồ sơ tài khoản cán bộ</Title>}
                 open={isModalOpen}
@@ -228,6 +275,18 @@ export default function RegulatorStaffApprove() {
                                 
                                 <Descriptions.Item label="Email liên hệ">{selectedUser.email}</Descriptions.Item>
                                 <Descriptions.Item label="Số CMND / CCCD">{info.cccd}</Descriptions.Item>
+                                
+                                {/* 🌟 THÊM DÒNG XEM TÀI LIỆU VÀO TRONG BẢNG CHI TIẾT */}
+                                <Descriptions.Item label="Hồ sơ minh chứng">
+                                    <Button 
+                                        type="dashed" 
+                                        icon={<FileTextOutlined />} 
+                                        size="small"
+                                        onClick={() => handleOpenDocuments(selectedUser.id)}
+                                    >
+                                        Xem tài liệu đính kèm (CCCD, Quyết định)
+                                    </Button>
+                                </Descriptions.Item>
                             </Descriptions>
 
                             <Flex align="center" style={{ marginTop: 16, padding: '12px 16px', backgroundColor: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8 }}>
@@ -238,6 +297,45 @@ export default function RegulatorStaffApprove() {
                         </div>
                     );
                 })()}
+            </Modal>
+
+            {/* 🌟 MODAL DANH SÁCH FILE */}
+            <Modal
+                title="Tài liệu đính kèm"
+                open={isDocModalOpen}
+                onCancel={() => setIsDocModalOpen(false)}
+                footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
+                destroyOnClose
+            >
+                {loadingDocs ? (
+                    <Flex justify="center" style={{ padding: 24 }}>
+                        <Spin tip="Đang tải danh sách tài liệu..." />
+                    </Flex>
+                ) : (
+                    <List
+                        dataSource={documents}
+                        locale={{ emptyText: "Không có tài liệu nào được đính kèm." }}
+                        renderItem={(filename) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        type="primary" 
+                                        icon={<EyeOutlined />} 
+                                        size="small" 
+                                        onClick={() => handlePreviewFile(filename)}
+                                    >
+                                        Xem trước
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={<FileTextOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
+                                    title={<Text strong>{filename}</Text>}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                )}
             </Modal>
         </div>
     );
