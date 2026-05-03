@@ -63,7 +63,6 @@ export default function BatchDetail() {
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
-    // 🌟 STATE CHO TÍNH NĂNG XEM TÀI LIỆU
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
     const [documents, setDocuments] = useState<string[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
@@ -196,7 +195,6 @@ export default function BatchDetail() {
         }
     };
 
-    // 🌟 HÀM MỞ MODAL VÀ LẤY DANH SÁCH FILE CỦA LÔ THUỐC
     const handleOpenDocuments = async () => {
         if (!id) return;
         setIsDocModalOpen(true);
@@ -219,7 +217,6 @@ export default function BatchDetail() {
         }
     };
 
-    // 🌟 HÀM XEM TRƯỚC (PREVIEW) FILE
     const handlePreviewFile = async (filename: string) => {
         if (!id) return;
         const hide = message.loading(`Đang tải file ${filename}...`, 0);

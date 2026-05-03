@@ -1,13 +1,15 @@
-import { FilterOutlined, PlusOutlined, SearchOutlined } from "@ant-design/icons";
-import { Button, Cascader, Flex, Input, Layout, message } from "antd";
+import { FilterOutlined, PlusOutlined, SearchOutlined, EyeOutlined, FileTextOutlined } from "@ant-design/icons";
+import { Button, Cascader, Flex, Input, Layout, message, Modal, Spin, List, Typography } from "antd";
 import EmployeeTable from "components/Table/EmployeeTable";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router";
-import { employeeApi } from "api/employeeApi";
+import { authApi, employeeApi } from "api/employeeApi";
 import { useAuth } from "auth/useAuth";
 
-export default function DistributorStaff() {
+const { Text } = Typography;
+
+export default function ManufacturerStaff() {
     const { setHeaderActions } = useHeaderActions();
     const { user } = useAuth();
 
@@ -16,6 +18,12 @@ export default function DistributorStaff() {
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
     const pageSize = 10;
+
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [documents, setDocuments] = useState<string[]>([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
+    
+    const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
     const fetchEmployees = useCallback(async () => {
         if (!user?.orgId) return;
@@ -45,13 +53,13 @@ export default function DistributorStaff() {
     useEffect(() => {
         setHeaderActions(
             <Flex justify='center' align='center' gap='small'>
-                <Link to="/manufacturer/staff/register">
+                <Link to="/distributor/staff/register">
                     <Button variant="outlined" icon={<PlusOutlined />} size="large">
                         Duyệt tài khoản
                     </Button>
                 </Link>
 
-                <Link to="/manufacturer/staff/create">
+                <Link to="/distributor/staff/create">
                     <Button type="primary" icon={<PlusOutlined />} size="large">
                         Thêm nhân viên
                     </Button>
@@ -61,6 +69,43 @@ export default function DistributorStaff() {
 
         return () => setHeaderActions(null);
     }, [setHeaderActions]);
+
+    const handleOpenDocuments = async (userId: string) => {
+        setIsDocModalOpen(true);
+        setSelectedUserId(userId);
+        setLoadingDocs(true);
+        try {
+            const res = await authApi.getDocuments(userId);
+            let docList = Array.isArray(res) ? res : (res?.data || []);
+            setDocuments(docList);
+            
+            if (docList.length === 0) {
+                message.warning("Nhân viên này không có tài liệu đính kèm nào!");
+            }
+        } catch (error) {
+            console.error("Lỗi lấy danh sách file nhân viên:", error);
+            message.error("Không thể tải hồ sơ của nhân viên!");
+            setDocuments([]);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
+    const handlePreviewFile = async (filename: string) => {
+        if (!selectedUserId) return;
+        const hide = message.loading(`Đang mở file ${filename}...`, 0);
+        try {
+            const blob = await authApi.getPreviewDocument(selectedUserId, filename);
+            const fileURL = URL.createObjectURL(blob);
+            window.open(fileURL, '_blank');
+        } catch (error) {
+            message.error("Có lỗi khi mở file!");
+        } finally {
+            hide();
+        }
+    };
+
+
     return (
         <>
             <Layout.Header className="headerLayout">
@@ -82,7 +127,7 @@ export default function DistributorStaff() {
                     </Flex>
                     <Flex flex={1}>
                         <Cascader
-                            placeholder="-- Chọn loại thuốc --"
+                            placeholder="-- Chọn phòng ban --"
                             size="large"
                             style={{ width: "100%" }}
                         />
@@ -100,8 +145,48 @@ export default function DistributorStaff() {
                         total: total,
                     }}
                     onChange={(p) => setPage(p)}
+                    
+                    onViewDocuments={handleOpenDocuments} 
                 />
             </Layout.Content>
+
+            <Modal
+                title={`Hồ sơ đính kèm`}
+                open={isDocModalOpen}
+                onCancel={() => setIsDocModalOpen(false)}
+                footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
+                destroyOnClose
+            >
+                {loadingDocs ? (
+                    <Flex justify="center" style={{ padding: 24 }}>
+                        <Spin tip="Đang tải danh sách tài liệu..." />
+                    </Flex>
+                ) : (
+                    <List
+                        dataSource={documents}
+                        locale={{ emptyText: "Không có hồ sơ đính kèm." }}
+                        renderItem={(filename) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        type="primary" 
+                                        icon={<EyeOutlined />} 
+                                        size="small" 
+                                        onClick={() => handlePreviewFile(filename)}
+                                    >
+                                        Xem
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={<FileTextOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
+                                    title={<Text strong>{filename}</Text>}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                )}
+            </Modal>
         </>
     );
 }

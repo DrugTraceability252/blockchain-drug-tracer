@@ -91,4 +91,7 @@ export const drugBatchApi = {
 
         return await response.blob();
     },
+    getBoxHistory: (boxId: string, batchId: string) => {
+        return apiClient(`/drug-boxes/${boxId}/history?batchId=${batchId}`, { method: 'GET' });
+    },
 };

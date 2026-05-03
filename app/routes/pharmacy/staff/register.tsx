@@ -2,7 +2,7 @@ import { Table, Button, Flex, message, Space, Typography, Modal, Popconfirm, Des
 import { PaperClipOutlined, CheckOutlined, CloseOutlined, EyeOutlined } from "@ant-design/icons";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { authApi, employeeApi } from "api/employeeApi";
-import { organizationApi } from "api/organizationApi"; // 🌟 Import API để lấy tên cơ sở
+import { organizationApi } from "api/organizationApi";
 import { useAuth } from "auth/useAuth";
 import { formatPhoneNumber } from "utils/phoneformat";
 
@@ -59,7 +59,6 @@ export default function RegisterList() {
         fetchFacilities();
     }, [fetchPendingUsers, fetchFacilities]);
 
-    // 3. Xử lý thuật toán bóc tách dữ liệu
     const parseUserData = useCallback((record: any) => {
         const fullName = `${record.lastName || ''} ${record.firstName || ''}`.trim() || record.username;
         const groupString = record.attributes?.group?.[0] || "";
@@ -164,20 +163,6 @@ export default function RegisterList() {
                         onClick={() => openModal(record)}
                     >
                     </Button>
-
-                    <Popconfirm
-                        title="Duyệt tài khoản?"
-                        onConfirm={() => handleApprove(record.id)}
-                        okText="Duyệt"
-                        cancelText="Hủy"
-                    >
-                        <Button 
-                            type="text" 
-                            style={{ color: '#52c41a' }} 
-                            icon={<CheckOutlined />}
-                            loading={actionLoading === record.id}
-                        />
-                    </Popconfirm>
                 </Space>
             )
         }
@@ -215,26 +200,6 @@ export default function RegisterList() {
                     <Button key="back" onClick={closeModal}>
                         Đóng
                     </Button>,
-                    <Popconfirm
-                        key="reject"
-                        title="Từ chối tài khoản này?"
-                        onConfirm={() => handleReject(selectedUser?.id)}
-                        okText="Từ chối"
-                        cancelText="Hủy"
-                        okButtonProps={{ danger: true }}
-                    >
-                        <Button danger icon={<CloseOutlined />}>Từ chối</Button>
-                    </Popconfirm>,
-                    <Button 
-                        key="approve" 
-                        type="primary" 
-                        style={{ backgroundColor: '#52c41a' }} 
-                        icon={<CheckOutlined />}
-                        loading={actionLoading === selectedUser?.id}
-                        onClick={() => handleApprove(selectedUser?.id)}
-                    >
-                        Cấp quyền truy cập
-                    </Button>,
                 ]}
             >
                 {selectedUser && (() => {
@@ -265,12 +230,6 @@ export default function RegisterList() {
                                 <Descriptions.Item label="Email liên hệ">{selectedUser.email}</Descriptions.Item>
                                 <Descriptions.Item label="Số CMND / CCCD">{info.cccd}</Descriptions.Item>
                             </Descriptions>
-
-                            <Flex align="center" style={{ marginTop: 16, padding: '12px 16px', backgroundColor: '#fffbe6', border: '1px solid #ffe58f', borderRadius: 8 }}>
-                                <Text type="warning" style={{ fontSize: 13 }}>
-                                    ⚠️ <b>Lưu ý:</b> Cán bộ này sẽ được cấp quyền truy cập hệ thống ngay lập tức sau khi bạn phê duyệt. Vui lòng xác minh kỹ danh tính trước khi xác nhận.
-                                </Text>
-                            </Flex>
                         </div>
                     );
                 })()}
