@@ -9,31 +9,36 @@ import { useAuth } from "auth/useAuth";
 
 const { Text } = Typography;
 
-export default function DistributorStaff() {
+export default function RegulatorInternalStaff() {
     const { setHeaderActions } = useHeaderActions();
-    const { user } = useAuth();
+    const { user } = useAuth(); 
 
     const [employees, setEmployees] = useState([]);
     const [loading, setLoading] = useState(false);
     const [total, setTotal] = useState(0);
-    const [page, setPage] = useState(1);
-    const pageSize = 10;
+    
+    const [queryParams, setQueryParams] = useState({
+        page: 1,
+        size: 10,
+        search: "",
+        role: undefined as string | undefined
+    });
 
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
     const [documents, setDocuments] = useState<string[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
-    
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
     const fetchEmployees = useCallback(async () => {
-        if (!user?.orgId) return;
-
         setLoading(true);
         try {
             const response = await employeeApi.getAll({
-                orgId: user.orgId,
-                page: page - 1,
-                size: pageSize,
+                orgId: "REGULATOR", 
+                
+                page: queryParams.page - 1,
+                size: queryParams.size,
+                search: queryParams.search,
+                role: queryParams.role
             });
             
             setEmployees(response.data || response.content || []);
@@ -44,7 +49,8 @@ export default function DistributorStaff() {
         } finally {
             setLoading(false);
         }
-    }, [user?.orgId, page]);
+        
+    }, [queryParams]); // Đã bỏ user?.orgId ra khỏi dependency vì ta ép cứng rồi
 
     useEffect(() => {
         fetchEmployees();
@@ -53,38 +59,55 @@ export default function DistributorStaff() {
     useEffect(() => {
         setHeaderActions(
             <Flex justify='center' align='center' gap='small'>
-                <Link to="/distributor/staff/register">
+                <Link to="/regulator/staff/register">
                     <Button variant="outlined" icon={<PlusOutlined />} size="large">
                         Duyệt tài khoản
                     </Button>
                 </Link>
-
-                <Link to="/distributor/staff/create">
+                <Link to="/regulator/staff/create">
                     <Button type="primary" icon={<PlusOutlined />} size="large">
-                        Thêm nhân viên
+                        Thêm cán bộ / nhân viên
                     </Button>
                 </Link>
             </Flex>
         );
-
         return () => setHeaderActions(null);
     }, [setHeaderActions]);
 
+    const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setQueryParams(prev => ({ ...prev, search: e.target.value, page: 1 }));
+    };
+
+    const handleTableChange = (pagination: any) => {
+        setQueryParams(prev => ({
+            ...prev,
+            page: pagination.current,
+            size: pagination.pageSize,
+        }));
+    };
+
     const handleOpenDocuments = async (userId: string) => {
-        setIsDocModalOpen(true);
         setSelectedUserId(userId);
+        setIsDocModalOpen(true);
         setLoadingDocs(true);
         try {
             const res = await authApi.getDocuments(userId);
-            let docList = Array.isArray(res) ? res : (res?.data || []);
+            
+            let docList = [];
+            if (Array.isArray(res)) {
+                docList = res;
+            } else if (res && Array.isArray(res.data)) {
+                docList = res.data;
+            }
+
             setDocuments(docList);
             
             if (docList.length === 0) {
-                message.warning("Nhân viên này không có tài liệu đính kèm nào!");
+                message.warning("Tài khoản này chưa có tài liệu nào được đính kèm!");
             }
         } catch (error) {
-            console.error("Lỗi lấy danh sách file nhân viên:", error);
-            message.error("Không thể tải hồ sơ của nhân viên!");
+            console.error("Lỗi lấy danh sách file:", error);
+            message.error("Không thể tải danh sách tài liệu đính kèm!");
             setDocuments([]);
         } finally {
             setLoadingDocs(false);
@@ -93,18 +116,18 @@ export default function DistributorStaff() {
 
     const handlePreviewFile = async (filename: string) => {
         if (!selectedUserId) return;
-        const hide = message.loading(`Đang mở file ${filename}...`, 0);
+        const hide = message.loading(`Đang tải file ${filename}...`, 0);
         try {
             const blob = await authApi.getPreviewDocument(selectedUserId, filename);
             const fileURL = URL.createObjectURL(blob);
             window.open(fileURL, '_blank');
         } catch (error) {
-            message.error("Có lỗi khi mở file!");
+            console.error("Lỗi preview file:", error);
+            message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
         } finally {
             hide();
         }
     };
-
 
     return (
         <>
@@ -112,24 +135,27 @@ export default function DistributorStaff() {
                 <Flex justify='space-between' align='center' gap='large'>
                 <Flex flex={1}>
                     <Input
-                        placeholder="Tìm kiếm"
+                        placeholder="Tìm kiếm theo tên, tài khoản, email..."
                         size="large"
                         suffix={<SearchOutlined />}
+                        onPressEnter={() => fetchEmployees()} 
+                        onChange={handleSearch}
                     />
                 </Flex>
                 <Flex flex={1} justify='space-between' align='center' gap='small'>
                     <Flex flex={1} justify='flex-end'>
-                        <Button 
-                            icon={<FilterOutlined />} 
-                            size="large"
-                            type='text'
-                        ></Button>
+                        <Button icon={<FilterOutlined />} size="large" type='text' />
                     </Flex>
                     <Flex flex={1}>
                         <Cascader
-                            placeholder="-- Chọn phòng ban --"
+                            placeholder="-- Lọc theo vai trò --"
                             size="large"
                             style={{ width: "100%" }}
+                            options={[
+                                { value: 'ADMIN', label: 'Quản trị viên' },
+                                { value: 'INSPECTOR', label: 'Thanh tra / Cán bộ duyệt' },
+                            ]}
+                            onChange={(val) => setQueryParams(prev => ({ ...prev, role: val?.[0] as string, page: 1 }))}
                         />
                     </Flex>
                 </Flex>
@@ -137,21 +163,21 @@ export default function DistributorStaff() {
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
                 <EmployeeTable 
-                    dataSource={employees}
-                    loading={loading}
+                    dataSource={employees} 
+                    loading={loading} 
                     pagination={{
-                        current: page,
-                        pageSize: pageSize,
+                        current: queryParams.page,
+                        pageSize: queryParams.size,
                         total: total,
+                        showSizeChanger: true
                     }}
-                    onChange={(p) => setPage(p)}
-                    
-                    onViewDocuments={handleOpenDocuments} 
+                    onChange={handleTableChange}
+                    onViewDocuments={handleOpenDocuments}
                 />
             </Layout.Content>
 
             <Modal
-                title={`Hồ sơ đính kèm`}
+                title="Tài liệu đính kèm"
                 open={isDocModalOpen}
                 onCancel={() => setIsDocModalOpen(false)}
                 footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
@@ -164,7 +190,7 @@ export default function DistributorStaff() {
                 ) : (
                     <List
                         dataSource={documents}
-                        locale={{ emptyText: "Không có hồ sơ đính kèm." }}
+                        locale={{ emptyText: "Không có tài liệu nào được đính kèm." }}
                         renderItem={(filename) => (
                             <List.Item
                                 actions={[
@@ -174,7 +200,7 @@ export default function DistributorStaff() {
                                         size="small" 
                                         onClick={() => handlePreviewFile(filename)}
                                     >
-                                        Xem
+                                        Xem trước
                                     </Button>
                                 ]}
                             >

@@ -29,6 +29,9 @@ export default function RegulatorStaff() {
     const [loadingDocs, setLoadingDocs] = useState(false);
     const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewTitle, setPreviewTitle] = useState<string>("");
+
     const fetchEmployees = useCallback(async () => {
         if (!user) return; 
 
@@ -46,7 +49,7 @@ export default function RegulatorStaff() {
             setEmployees(response.data || response.content || []);
             setTotal(response.totalElements || response.total || 0);
         } catch (error) {
-            console.error("Lỗi khi tải danh sách nhân viên:", error);
+            console.error(error);
             message.error("Không thể tải danh sách nhân viên");
         } finally {
             setLoading(false);
@@ -108,7 +111,7 @@ export default function RegulatorStaff() {
                 message.warning("Tài khoản này chưa có tài liệu nào được đính kèm!");
             }
         } catch (error) {
-            console.error("Lỗi lấy danh sách file:", error);
+            console.error(error);
             message.error("Không thể tải danh sách tài liệu đính kèm!");
             setDocuments([]);
         } finally {
@@ -122,9 +125,10 @@ export default function RegulatorStaff() {
         try {
             const blob = await authApi.getPreviewDocument(selectedUserId, filename);
             const fileURL = URL.createObjectURL(blob);
-            window.open(fileURL, '_blank');
+            setPreviewUrl(fileURL);
+            setPreviewTitle(filename);
         } catch (error) {
-            console.error("Lỗi preview file:", error);
+            console.error(error);
             message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
         } finally {
             hide();
@@ -178,7 +182,6 @@ export default function RegulatorStaff() {
                 />
             </Layout.Content>
 
-            {/* 🌟 MODAL DANH SÁCH FILE */}
             <Modal
                 title="Tài liệu đính kèm"
                 open={isDocModalOpen}
@@ -214,6 +217,39 @@ export default function RegulatorStaff() {
                             </List.Item>
                         )}
                     />
+                )}
+            </Modal>
+
+            <Modal
+                title={`Xem tài liệu: ${previewTitle}`}
+                open={!!previewUrl}
+                onCancel={() => {
+                    if (previewUrl) URL.revokeObjectURL(previewUrl);
+                    setPreviewUrl(null);
+                }}
+                footer={null}
+                width={1000}
+                style={{ top: 20 }}
+                destroyOnClose
+            >
+                {previewUrl && (
+                    previewTitle.toLowerCase().endsWith('.pdf') ? (
+                        <iframe 
+                            src={previewUrl} 
+                            width="100%" 
+                            height="800px"
+                            style={{ border: 'none', borderRadius: 8 }} 
+                            title="Preview PDF"
+                        />
+                    ) : (
+                        <Flex justify="center" align="center" style={{ width: '100%', minHeight: '500px' }}>
+                            <img 
+                                src={previewUrl} 
+                                alt="Preview" 
+                                style={{ maxWidth: '100%', maxHeight: '800px', objectFit: 'contain' }} 
+                            />
+                        </Flex>
+                    )
                 )}
             </Modal>
         </>

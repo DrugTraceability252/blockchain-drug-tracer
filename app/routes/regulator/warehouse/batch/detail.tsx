@@ -62,6 +62,10 @@ export default function RegulatorBatchDetail() {
     const [documents, setDocuments] = useState<string[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
 
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [previewFileName, setPreviewFileName] = useState<string>("");
+
     // 1. Kéo dữ liệu Lô thuốc
     const fetchBatchDetail = useCallback(async () => {
         try {
@@ -144,7 +148,6 @@ export default function RegulatorBatchDetail() {
         }
     }, [isHistoryVisible, id]);
 
-    // 🌟 HÀM XỬ LÝ TÀI LIỆU QC
     const handleOpenDocuments = async () => {
         if (!id) return;
         setIsDocModalOpen(true);
@@ -152,12 +155,16 @@ export default function RegulatorBatchDetail() {
         try {
             const res = await drugBatchApi.getDocuments(id);
             let docList = Array.isArray(res) ? res : (res?.data || []);
+
+            docList = docList.filter((d: string) => d && d !== "no_document");
+
             setDocuments(docList);
-            if (docList.length === 0 || (docList.length === 1 && docList[0] === "no_document")) {
+            
+            if (docList.length === 0) {
                 message.warning("Lô thuốc này chưa có hồ sơ QC nào được đính kèm!");
-                setDocuments([]);
             }
         } catch (error) {
+            console.error("Lỗi lấy danh sách file:", error);
             message.error("Không thể tải danh sách tài liệu đính kèm!");
             setDocuments([]);
         } finally {
@@ -171,11 +178,21 @@ export default function RegulatorBatchDetail() {
         try {
             const blob = await drugBatchApi.getPreviewDocument(id, filename);
             const fileURL = URL.createObjectURL(blob);
-            window.open(fileURL, '_blank');
+            setPreviewUrl(fileURL);
+            setPreviewFileName(filename);
+            setIsPreviewModalOpen(true);
         } catch (error) {
             message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
         } finally {
             hide();
+        }
+    };
+
+    const handleClosePreview = () => {
+        setIsPreviewModalOpen(false);
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(null);
         }
     };
 
@@ -236,14 +253,19 @@ export default function RegulatorBatchDetail() {
         return () => setHeaderActions(null);
     }, [setHeaderActions, batchDetail, actionLoading]); 
 
-    // Cấu hình cột cho bảng Hộp thuốc
     const columns = [
         { 
             title: "Mã hộp", 
             dataIndex: "boxId",
             key: "boxId",
-            render: (boxId: string) => (
-                <QRCodeCell batchId={id || ""} boxId={boxId} baseUrl={API_BASE_URL} />
+            render: (boxId: string, record: any) => (
+                <QRCodeCell 
+                    batchId={id || ""} 
+                    boxId={boxId} 
+                    baseUrl={API_BASE_URL} 
+                    drugName={drugName}
+                    status={record.status}
+                ></QRCodeCell>
             )
         },
         {
@@ -269,12 +291,10 @@ export default function RegulatorBatchDetail() {
     return (
         <Layout.Content className="contentLayoutTableLevel">
             <Flex vertical align="center" gap={16}>
-                {/* 🌟 1. THANH TIẾN TRÌNH */}
                 <SupplyChainStep current={currentStep} isRecalled={batchDetail.status === "RECALLED"} />
                 
                 <Row gutter={24} style={{ width: "100%" }}>
                     
-                    {/* 🌟 2. CỘT TRÁI: THÔNG TIN CHI TIẾT & KIỂM ĐỊNH QC */}
                     <Col xs={24} lg={10}>
                         <Card title="Hồ sơ kiểm định lô thuốc (QC)">
                             <InfoRow 
@@ -303,7 +323,6 @@ export default function RegulatorBatchDetail() {
                             <InfoRow label="Ngày sản xuất" value={batchDetail.productionDate ? dayjs(batchDetail.productionDate).format("DD/MM/YYYY") : "N/A"} />
                             <InfoRow label="Hạn sử dụng" value={batchDetail.expiryDate ? dayjs(batchDetail.expiryDate).format("DD/MM/YYYY") : "N/A"} />
                             
-                            {/* Nút Xem Hồ sơ QC */}
                             <InfoRow 
                                 label="Hồ sơ QC đính kèm" 
                                 value={
@@ -326,7 +345,6 @@ export default function RegulatorBatchDetail() {
                         </Card>
                     </Col>
 
-                    {/* 🌟 3. CỘT PHẢI: BẢNG DANH SÁCH HỘP THUỐC */}
                     <Col xs={24} lg={14} style={{ marginTop: 16 }}>
                         <Card title={`Danh sách hộp thuốc thuộc lô (${boxes.length})`}>
                             <Table
@@ -342,11 +360,6 @@ export default function RegulatorBatchDetail() {
                 </Row>
             </Flex>
 
-            {/* ============================================================== */}
-            {/* CÁC MODAL HIỂN THỊ */}
-            {/* ============================================================== */}
-
-            {/* MODAL LỊCH SỬ VÒNG ĐỜI (Lấy từ Manufacturer) */}
             <Modal
                 title={`Lịch sử vòng đời lô thuốc: ${id}`}
                 open={isHistoryVisible}
@@ -425,6 +438,26 @@ export default function RegulatorBatchDetail() {
                             </List.Item>
                         )}
                     />
+                )}
+            </Modal>
+
+            <Modal
+                title={`Xem trước tài liệu: ${previewFileName}`}
+                open={isPreviewModalOpen}
+                onCancel={handleClosePreview}
+                footer={<Button onClick={handleClosePreview}>Đóng</Button>}
+                width={1000}
+                style={{ top: 20 }}
+                destroyOnClose
+            >
+                {previewUrl ? (
+                    <iframe 
+                        src={previewUrl} 
+                        style={{ width: '100%', height: '80vh', border: 'none' }} 
+                        title={previewFileName}
+                    />
+                ) : (
+                    <Flex justify="center" align="center" style={{ height: '50vh' }}><Spin /></Flex>
                 )}
             </Modal>
 

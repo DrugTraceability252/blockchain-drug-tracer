@@ -1,5 +1,5 @@
-import { PaperClipOutlined, CheckOutlined, CloseOutlined, EyeOutlined, CheckCircleOutlined } from "@ant-design/icons";
-import { Button, Flex, message, Space, Table, Tag, Popconfirm, Modal, Divider, Descriptions, Typography } from "antd";
+import { PaperClipOutlined, CheckOutlined, CloseOutlined, EyeOutlined, CheckCircleOutlined, FileTextOutlined } from "@ant-design/icons";
+import { Button, Flex, message, Space, Table, Tag, Popconfirm, Modal, Divider, Descriptions, Typography, List, Spin } from "antd";
 import { useCallback, useEffect, useState } from "react";
 import { organizationApi } from "api/organizationApi";
 import dayjs from "dayjs";
@@ -22,6 +22,13 @@ export default function RegulatorCompanyApprove() {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedOrg, setSelectedOrg] = useState<any>(null);
+
+    const [isDocModalOpen, setIsDocModalOpen] = useState(false);
+    const [documents, setDocuments] = useState<string[]>([]);
+    const [loadingDocs, setLoadingDocs] = useState(false);
+
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewTitle, setPreviewTitle] = useState<string>("");
 
     const fetchPendingOrgs = useCallback(async () => {
         setLoading(true);
@@ -54,6 +61,45 @@ export default function RegulatorCompanyApprove() {
     const closeModal = () => {
         setIsModalOpen(false);
         setSelectedOrg(null);
+    };
+
+    const handleOpenDocuments = async (orgId: string) => {
+        setIsDocModalOpen(true);
+        setLoadingDocs(true);
+        try {
+            const res = await organizationApi.getDocuments(orgId);
+            let docList = Array.isArray(res) ? res : (res?.data || []);
+            setDocuments(docList);
+            
+            if (docList.length === 0 || (docList.length === 1 && docList[0] === "no_document")) {
+                message.warning("Tổ chức này chưa đính kèm hồ sơ pháp lý nào!");
+                setDocuments([]); 
+            }
+        } catch (error) {
+            console.error("Lỗi lấy danh sách file:", error);
+            message.error("Không thể tải danh sách tài liệu đính kèm!");
+            setDocuments([]);
+        } finally {
+            setLoadingDocs(false);
+        }
+    };
+
+    const handlePreviewFile = async (filename: string) => {
+        if (!selectedOrg?.orgId) return;
+        const hide = message.loading(`Đang mở file ${filename}...`, 0);
+        try {
+            const blob = await organizationApi.getPreviewDocument(selectedOrg.orgId, filename);
+            const fileURL = URL.createObjectURL(blob);
+            
+            setPreviewUrl(fileURL);
+            setPreviewTitle(filename);
+            
+        } catch (error) {
+            console.error("Lỗi preview file:", error);
+            message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
+        } finally {
+            hide();
+        }
     };
 
     const handleApprove = async (orgId: string) => {
@@ -99,11 +145,6 @@ export default function RegulatorCompanyApprove() {
             key: 'taxCode',
         },
         {
-            title: 'Số giấy phép',
-            dataIndex: 'licenseNumber',
-            key: 'licenseNumber',
-        },
-        {
             title: 'Liên hệ',
             key: 'contact',
             render: (_: any, record: any) => (
@@ -122,11 +163,22 @@ export default function RegulatorCompanyApprove() {
         {
             title: 'Tài liệu đính kèm',
             key: 'documents',
-            render: (_: any, record: any) => (
-                <Tag icon={<PaperClipOutlined />} color="blue">
-                    {record.documentHashes?.length ? `${record.documentHashes.length} tệp` : "0 tệp"}
-                </Tag>
-            )
+            render: (_: any, record: any) => {
+                return (
+                    <Button 
+                        type="dashed" 
+                        icon={<PaperClipOutlined />} 
+                        size="small"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedOrg(record);
+                            handleOpenDocuments(record.orgId);
+                        }}
+                    >
+                        Xem hồ sơ 
+                    </Button>
+                );
+            }
         },
         {
             title: 'Hành động',
@@ -139,8 +191,8 @@ export default function RegulatorCompanyApprove() {
                         icon={<EyeOutlined />} 
                         style={{ color: '#1677ff' }}
                         onClick={() => showDetailModal(record)}
-                    >
-                    </Button>
+                        title="Xem chi tiết"
+                    />
 
                     <Popconfirm
                         title="Duyệt hồ sơ?"
@@ -153,6 +205,7 @@ export default function RegulatorCompanyApprove() {
                             style={{ color: '#52c41a' }} 
                             icon={<CheckCircleOutlined />} 
                             loading={actionLoading === record.orgId}
+                            title="Duyệt công ty này"
                         />
                     </Popconfirm>
                 </Space>
@@ -170,6 +223,7 @@ export default function RegulatorCompanyApprove() {
                 locale={{ emptyText: "Không có hồ sơ công ty/tổ chức nào đang chờ duyệt" }}
                 pagination={{ pageSize: 10 }}
             />
+            
             <Modal
                 title={<Title level={4} style={{ margin: 0 }}>Kiểm duyệt hồ sơ đăng ký</Title>}
                 open={isModalOpen}
@@ -235,9 +289,14 @@ export default function RegulatorCompanyApprove() {
                                 {dayjs(selectedOrg.createdAt).format("DD/MM/YYYY HH:mm:ss")}
                             </Descriptions.Item>
                             <Descriptions.Item label="Tài liệu đính kèm">
-                                <Tag icon={<PaperClipOutlined />} color="blue">
-                                    {selectedOrg.documentHashes?.length ? `${selectedOrg.documentHashes.length} tệp` : "0 tệp"}
-                                </Tag>
+                                <Button 
+                                    type="dashed" 
+                                    icon={<FileTextOutlined />} 
+                                    size="small" 
+                                    onClick={() => handleOpenDocuments(selectedOrg.orgId)}
+                                >
+                                    Xem hồ sơ đính kèm
+                                </Button>
                             </Descriptions.Item>
                         </Descriptions>
 
@@ -246,6 +305,108 @@ export default function RegulatorCompanyApprove() {
                             * Lưu ý: Việc phê duyệt sẽ cấp quyền cho tổ chức này tham gia trực tiếp vào mạng lưới Blockchain. Vui lòng kiểm tra kỹ các thông tin pháp lý.
                         </Text>
                     </div>
+                )}
+            </Modal>
+
+            <Modal
+                title={`Hồ sơ pháp lý: ${selectedOrg?.orgName || 'Đang tải'}`}
+                open={isDocModalOpen}
+                onCancel={() => setIsDocModalOpen(false)}
+                footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
+                destroyOnClose
+            >
+                {loadingDocs ? (
+                    <Flex justify="center" style={{ padding: 24 }}>
+                        <Spin tip="Đang tải danh sách tài liệu..." />
+                    </Flex>
+                ) : (
+                    <List
+                        dataSource={documents}
+                        locale={{ emptyText: "Không có tài liệu nào được đính kèm." }}
+                        renderItem={(filename) => (
+                            <List.Item
+                                actions={[
+                                    <Button 
+                                        type="primary" 
+                                        icon={<EyeOutlined />} 
+                                        size="small" 
+                                        onClick={() => handlePreviewFile(filename)}
+                                    >
+                                        Xem tài liệu
+                                    </Button>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    avatar={<FileTextOutlined style={{ fontSize: 24, color: '#1677ff' }} />}
+                                    title={<Text strong>{filename}</Text>}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                )}
+            </Modal>
+            <Modal
+                title={`Hồ sơ pháp lý: ${selectedOrg?.orgName || 'Đang tải'}`}
+                open={!!previewUrl}
+                onCancel={() => {
+                    if (previewUrl) URL.revokeObjectURL(previewUrl);
+                    setPreviewUrl(null);
+                }}
+                footer={null}
+                width={1000}
+                style={{ top: 20 }}
+                destroyOnClose
+            >
+                {previewUrl && (
+                    previewTitle.toLowerCase().endsWith('.pdf') ? (
+                        <iframe 
+                            src={previewUrl} 
+                            width="100%" 
+                            height="700px"
+                            style={{ border: 'none', borderRadius: 8 }} 
+                            title="Preview PDF"
+                        />
+                    ) : (
+                        <Flex justify="center" align="center" style={{ width: '100%', minHeight: '500px' }}>
+                            <img 
+                                src={previewUrl} 
+                                alt="Preview" 
+                                style={{ maxWidth: '100%', maxHeight: '800px', objectFit: 'contain' }} 
+                            />
+                        </Flex>
+                    )
+                )}
+            </Modal>
+            <Modal
+                title={`Hồ sơ pháp lý: ${selectedOrg?.orgName || 'Đang tải'}`}
+                open={!!previewUrl}
+                onCancel={() => {
+                    if (previewUrl) URL.revokeObjectURL(previewUrl);
+                    setPreviewUrl(null);
+                }}
+                footer={null}
+                width={1000}
+                style={{ top: 20 }}
+                destroyOnClose
+            >
+                {previewUrl && (
+                    previewTitle.toLowerCase().endsWith('.pdf') ? (
+                        <iframe 
+                            src={previewUrl} 
+                            width="100%" 
+                            height="700px"
+                            style={{ border: 'none', borderRadius: 8 }} 
+                            title="Preview PDF"
+                        />
+                    ) : (
+                        <Flex justify="center" align="center" style={{ width: '100%', minHeight: '500px' }}>
+                            <img 
+                                src={previewUrl} 
+                                alt="Preview" 
+                                style={{ maxWidth: '100%', maxHeight: '800px', objectFit: 'contain' }} 
+                            />
+                        </Flex>
+                    )
                 )}
             </Modal>
         </div>

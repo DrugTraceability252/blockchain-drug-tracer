@@ -25,8 +25,6 @@ export default function ManufacturerWarehouseCreateBatch() {
     const [facilities, setFacilities] = useState<any[]>([]);
     const [loadingFacilities, setLoadingFacilities] = useState(false);
 
-    const [fileList, setFileList] = useState<any[]>([]);
-
     useEffect(() => {
         const fetchDrugs = async () => {
             if (!user?.orgId) return;
@@ -259,13 +257,16 @@ export default function ManufacturerWarehouseCreateBatch() {
                             <div style={{padding: 8}}>
                             <Row gutter={16}>
                                 <Col span={24}>
-                                    <Form.Item label="Hồ sơ kiểm nghiệm lô (QC Documents, Phiếu xuất xưởng...)">
+                                    <Form.Item 
+                                        name="documentHashes"
+                                        label="Hồ sơ kiểm nghiệm lô (QC Documents, Phiếu xuất xưởng...)"
+                                        valuePropName="fileList"
+                                        getValueFromEvent={(e: any) => Array.isArray(e) ? e : e?.fileList}
+                                    >
                                         {/* 🌟 CẬP NHẬT LẠI THÀNH DRAGGER ĐỂ CHỨA FILE */}
                                         <Dragger 
                                             multiple={true} 
                                             beforeUpload={() => false}
-                                            fileList={fileList}
-                                            onChange={(info) => setFileList(info.fileList)}
                                         >
                                             <p className="ant-upload-drag-icon"><InboxOutlined /></p>
                                             <p className="ant-upload-text">Kéo thả hoặc nhấp để tải file PDF/Ảnh lên</p>

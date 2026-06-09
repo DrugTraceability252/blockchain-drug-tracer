@@ -17,7 +17,7 @@ export function RegulatorCompanyManage({ fixedOrgType} : { fixedOrgType: "MANUFA
 
     const [queryParams, setQueryParams] = useState({
         page: 1,
-        size: 10,
+        size: 8,
         name: "", 
         type: fixedOrgType
     });

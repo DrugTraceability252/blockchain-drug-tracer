@@ -43,12 +43,16 @@ export default [
     route("regulator/company/register", "routes/regulator/company/register.tsx"),
 
     route("regulator/warehouse/batch", "routes/regulator/warehouse/batch/batch.tsx"),
+    route("regulator/warehouse/registerbatch", "routes/regulator/warehouse/batch/registerbatch.tsx"),
     route("regulator/warehouse/batch/:id", "routes/regulator/warehouse/batch/detail.tsx"),
     route("regulator/warehouse/batch/:id/register", "routes/regulator/warehouse/batch/register.tsx"),
     route("regulator/warehouse/profile", "routes/regulator/warehouse/profile/profile.tsx"),
+    route("regulator/warehouse/registerprofile", "routes/regulator/warehouse/profile/registerprofile.tsx"),
     route("regulator/warehouse/profile/create", "routes/regulator/warehouse/profile/create.tsx"),
     route("regulator/warehouse/profile/:id", "routes/regulator/warehouse/profile/detail.tsx"),
+    route("regulator/warehouse/registerprofile/:id", "routes/regulator/warehouse/profile/detail.tsx", { id: "regulator-registerprofile-detail" }),
 
+    route("regulator/internal", "routes/regulator/staff/internal.tsx"),
     route("regulator/staff", "routes/regulator/staff/staff.tsx"),
     route("regulator/staff/create", "routes/regulator/staff/create.tsx"),
     route("regulator/staff/register", "routes/regulator/staff/register.tsx"),

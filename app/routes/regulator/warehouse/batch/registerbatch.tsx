@@ -16,7 +16,7 @@ const qcStatusMap: Record<string, { color: string; label: string }> = {
     PENDING: { color: "orange", label: "Chờ kiểm định" }
 };
 
-export default function RegulatorBatch() {
+export default function RegulatorRegisterBatch() {
     const { setHeaderActions } = useHeaderActions();
     const [batches, setBatches] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
@@ -27,8 +27,10 @@ export default function RegulatorBatch() {
             const res = await drugBatchApi.getAll({ page: 1, size: 100 });
             const rawBatches = res.data || res.content || [];
 
+            const pendingBatches = rawBatches.filter((batch: any) => batch.qcStatus === "PENDING");
+
             const enrichedBatches = await Promise.all(
-                rawBatches.map(async (batch: any) => {
+                pendingBatches.map(async (batch: any) => {
                     let dName = batch.drugId; 
                     let oName = batch.manufacturerOrgId;
 
@@ -88,12 +90,6 @@ export default function RegulatorBatch() {
             key: "drugName",
             render: (text: string) => <span style={{ fontWeight: 500 }}>{text}</span>
         },
-        {
-            title: "Số lượng",
-            dataIndex: "totalBoxes",
-            key: "totalBoxes",
-            render: (total: number) => <span style={{ fontWeight: 500 }}>{total} hộp</span>
-        },
         { 
             title: "Nhà sản xuất", 
             dataIndex: "orgName",
@@ -144,7 +140,8 @@ export default function RegulatorBatch() {
                     dataSource={batches} 
                     loading={loading} 
                     rowKey="batchId" 
-                    pagination={{ defaultPageSize: 7 }}
+                    pagination={{ defaultPageSize: 10 }}
+                    locale={{ emptyText: "Không có lô thuốc nào đang chờ kiểm định" }}
                 />
             </Layout.Content>
         </>

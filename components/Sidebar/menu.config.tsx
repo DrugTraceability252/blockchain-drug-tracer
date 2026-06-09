@@ -94,12 +94,6 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                 },
             ],
         },
-        {
-            key: "alerts",
-            label: "Cảnh báo",
-            icon: <BellOutlined />,
-            path: "/manufacturer/alerts",
-        },
     ],
 
     DISTRIBUTOR: [
@@ -150,12 +144,6 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                     path: "/distributor/staff/register",
                 },
             ],
-        },
-        {
-            key: "alerts",
-            label: "Cảnh báo",
-            icon: <BellOutlined />,
-            path: "/manufacturer/alerts",
         },
     ],
 
@@ -254,6 +242,23 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                     ]
                 },
                 {
+                    key: "registerprofile",
+                    label: "Hồ sơ chờ duyệt",
+                    path: "/regulator/warehouse/registerprofile",
+                    children: [
+                        {
+                            key: "rcreate",
+                            label: "Thêm hồ sơ thuốc",
+                            path: "/regulator/warehouse/registerprofile/create",
+                        },
+                        {
+                            key: "rdetail",
+                            label: "chi tiết thuốc",
+                            path: "/regulator/warehouse/registerprofile/:id",
+                        },
+                    ]
+                },
+                {
                     key: "batch",
                     label: "Lô thuốc",
                     path: "/regulator/warehouse/batch",
@@ -270,6 +275,11 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                         }
                     ],
                 },
+                {
+                    key: "registerbatch",
+                    label: "Lô chờ duyệt",
+                    path: "/regulator/warehouse/registerbatch",
+                },
             ]
         },
         {
@@ -277,6 +287,11 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
             label: "Quản lý tài khoản",
             icon: <LayoutOutlined />,
             children: [
+                {
+                    key: "internal",
+                    label: "Tài khoản nội bộ",
+                    path: "/regulator/internal",
+                },
                 {
                     key: "profile",
                     label: "Danh sách tài khoản",
@@ -344,12 +359,6 @@ export const menuByRole: Record<UserRole, MenuItem[]> = {
                     path: "/pharmacy/staff/register",
                 },
             ],
-        },
-        {
-            key: "alerts",
-            label: "Cảnh báo",
-            icon: <BellOutlined />,
-            path: "/pharmacy/alerts",
-        },
+        }
     ],
 };

@@ -15,3 +15,5 @@ node_modules/
 /playwright/.auth/
 
 /tests
+/.nyc_output/
+/coverage/

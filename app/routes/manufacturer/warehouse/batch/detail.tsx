@@ -63,10 +63,13 @@ export default function BatchDetail() {
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [loadingHistory, setLoadingHistory] = useState(false);
 
-    // 🌟 STATE CHO TÍNH NĂNG XEM TÀI LIỆU
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
     const [documents, setDocuments] = useState<string[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
+
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [previewFileName, setPreviewFileName] = useState<string>("");
 
     const fetchBatchDetail = useCallback(async () => {
         try {
@@ -196,7 +199,6 @@ export default function BatchDetail() {
         }
     };
 
-    // 🌟 HÀM MỞ MODAL VÀ LẤY DANH SÁCH FILE CỦA LÔ THUỐC
     const handleOpenDocuments = async () => {
         if (!id) return;
         setIsDocModalOpen(true);
@@ -204,11 +206,13 @@ export default function BatchDetail() {
         try {
             const res = await drugBatchApi.getDocuments(id);
             let docList = Array.isArray(res) ? res : (res?.data || []);
+
+            docList = docList.filter((d: string) => d && d !== "no_document");
+
             setDocuments(docList);
             
-            if (docList.length === 0 || (docList.length === 1 && docList[0] === "no_document")) {
+            if (docList.length === 0) {
                 message.warning("Lô thuốc này chưa có hồ sơ QC nào được đính kèm!");
-                setDocuments([]); 
             }
         } catch (error) {
             console.error("Lỗi lấy danh sách file:", error);
@@ -219,19 +223,28 @@ export default function BatchDetail() {
         }
     };
 
-    // 🌟 HÀM XEM TRƯỚC (PREVIEW) FILE
     const handlePreviewFile = async (filename: string) => {
         if (!id) return;
         const hide = message.loading(`Đang tải file ${filename}...`, 0);
         try {
             const blob = await drugBatchApi.getPreviewDocument(id, filename);
             const fileURL = URL.createObjectURL(blob);
-            window.open(fileURL, '_blank');
+            setPreviewUrl(fileURL);
+            setPreviewFileName(filename);
+            setIsPreviewModalOpen(true);
         } catch (error) {
             console.error("Lỗi preview file:", error);
             message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
         } finally {
             hide();
+        }
+    };
+
+    const handleClosePreview = () => {
+        setIsPreviewModalOpen(false);
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(null);
         }
     };
 
@@ -344,7 +357,6 @@ export default function BatchDetail() {
                             <InfoRow label="Ngày sản xuất" value={batchDetail.productionDate ? dayjs(batchDetail.productionDate).format("DD/MM/YYYY") : "N/A"} />
                             <InfoRow label="Hạn sử dụng" value={batchDetail.expiryDate ? dayjs(batchDetail.expiryDate).format("DD/MM/YYYY") : "N/A"} />
                             
-                            {/* 🌟 NÚT XEM TÀI LIỆU QC ĐƯỢC THÊM VÀO ĐÂY */}
                             <InfoRow 
                                 label="Hồ sơ QC đính kèm" 
                                 value={
@@ -432,7 +444,6 @@ export default function BatchDetail() {
                 </Form>
             </Modal>
 
-            {/* MODAL LỊCH SỬ VÒNG ĐỜI */}
             <Modal
                 title={`Lịch sử vòng đời lô thuốc: ${id}`}
                 open={isHistoryVisible}
@@ -482,7 +493,6 @@ export default function BatchDetail() {
                 )}
             </Modal>
 
-            {/* 🌟 MODAL DANH SÁCH FILE QC ĐÍNH KÈM */}
             <Modal
                 title="Hồ sơ QC đính kèm"
                 open={isDocModalOpen}
@@ -518,6 +528,26 @@ export default function BatchDetail() {
                             </List.Item>
                         )}
                     />
+                )}
+            </Modal>
+
+            <Modal
+                title={`Xem trước tài liệu: ${previewFileName}`}
+                open={isPreviewModalOpen}
+                onCancel={handleClosePreview}
+                footer={<Button onClick={handleClosePreview}>Đóng</Button>}
+                width={1000}
+                style={{ top: 20 }}
+                destroyOnClose
+            >
+                {previewUrl ? (
+                    <iframe 
+                        src={previewUrl} 
+                        style={{ width: '100%', height: '80vh', border: 'none' }} 
+                        title={previewFileName}
+                    />
+                ) : (
+                    <Flex justify="center" align="center" style={{ height: '50vh' }}><Spin /></Flex>
                 )}
             </Modal>
 

@@ -6,13 +6,12 @@ import { drugProfileApi } from "api/drugProfileApi";
 import { useAuth } from "auth/useAuth";
 
 interface MedicineTableProps {
-    searchTerm: string;
-    drugType: string | null;
+    searchTerm?: string;
+    drugType?: string | null;
+    status?: string | null;
 }
 
-export default function MedicineTable({ searchTerm, drugType }
-    : MedicineTableProps
-) {
+export default function MedicineTable({ searchTerm, drugType, status }: MedicineTableProps) {
     const [data, setData] = useState([]);
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
@@ -25,20 +24,38 @@ export default function MedicineTable({ searchTerm, drugType }
     const { user } = useAuth();
     
     const navigate = useNavigate();
-    const pageSize = 10;
+    const pageSize = 8;
 
     const fetchMedicines = async () => {
         setLoading(true);
         try {
             const result = await drugProfileApi.getAll({
-                manufacturerOrgId: user?.orgId ?? undefined,
-                page: page,
-                size: pageSize,
-                drugType: drugType
+                manufacturerOrgId: user?.role !== 'REGULATOR' ? (user?.orgId ?? undefined) : undefined,
+                page: 1, 
+                size: 1000 
             });
             
-            setData(result.data || []);
-            setTotal(result.total || 0);
+            let rawData = result.data || result.content || [];
+
+            if (searchTerm) {
+                const lowerSearch = searchTerm.toLowerCase();
+                rawData = rawData.filter((item: any) => 
+                    item.drugName?.toLowerCase().includes(lowerSearch) || 
+                    item.registrationNumber?.toLowerCase().includes(lowerSearch)
+                );
+            }
+            if (drugType) {
+                rawData = rawData.filter((item: any) => item.drugType === drugType);
+            }
+            if (status) {
+                rawData = rawData.filter((item: any) => item.approveStatus === status);
+            }
+
+            const startIndex = (page - 1) * pageSize;
+            const pagedData = rawData.slice(startIndex, startIndex + pageSize);
+
+            setData(pagedData);
+            setTotal(rawData.length);
 
         } catch (error) {
             console.error("Fetch error:", error);
@@ -62,7 +79,7 @@ export default function MedicineTable({ searchTerm, drugType }
             
             message.success("Cập nhật trạng thái thành công!");
             setIsModalOpen(false);
-            fetchMedicines(); 
+            fetchMedicines();
         } catch (error) {
             console.error(error);
             message.error("Lỗi khi cập nhật trạng thái!");
@@ -73,13 +90,12 @@ export default function MedicineTable({ searchTerm, drugType }
 
     useEffect(() => {
         fetchMedicines();
-    }, [page, drugType, searchTerm]);
+    }, [page, drugType, searchTerm, status]);
 
     useEffect(() => {
         setPage(1);
-    }, [drugType, searchTerm]);
+    }, [drugType, searchTerm, status]);
 
-    console.log(data);
     return (
         <Flex vertical style={{ height: "100%" }}>
             <div style={{ flex: 1, overflow: "hidden" }}>
@@ -91,6 +107,7 @@ export default function MedicineTable({ searchTerm, drugType }
                     bordered
                     scroll={{ y: '100%' }}
                     loading={loading}
+                    locale={{ emptyText: "Không tìm thấy hồ sơ thuốc nào phù hợp" }}
                     onRow={(record) => ({
                         onClick: () => {
                             navigate(`${record.drugId}`, {

@@ -1,9 +1,12 @@
-import { Button, Form, Input, Layout, Row, Col, Select, message } from "antd";
+import { Button, Form, Input, Layout, Row, Col, Select, message, Upload, Divider } from "antd";
+import { InboxOutlined } from "@ant-design/icons";
 import { authApi } from "api/employeeApi";
 import { useAuth } from "auth/useAuth";
 import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+
+const { Dragger } = Upload;
 
 export default function DistributorWarehouseCreateStaff() {
     const [form] = Form.useForm();
@@ -12,7 +15,8 @@ export default function DistributorWarehouseCreateStaff() {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
 
-    // Gắn nút "Lưu thông tin" lên Header
+    const [fileList, setFileList] = useState<any[]>([]);
+
     useEffect(() => {
         setHeaderActions(
             <Button 
@@ -27,7 +31,6 @@ export default function DistributorWarehouseCreateStaff() {
         return () => setHeaderActions(null);
     }, [setHeaderActions, form, loading]);
 
-    // Xử lý khi submit Form thành công
     const onFinish = async (values: any) => {
         if (!user?.orgId) {
             message.error("Không tìm thấy thông tin tổ chức của bạn!");
@@ -37,28 +40,34 @@ export default function DistributorWarehouseCreateStaff() {
         try {
             setLoading(true);
             
-            // Tự động build chuỗi group theo chuẩn DTO: ORG_TYPE/ORG_ID/FACILITY_ID/ROLE
-            // Ví dụ: MANUFACTURER/ORG001/FAC001/STAFF
             const facilityId = user.facilityId || "DEFAULT_FAC"; 
             const groupString = `${user.role}/${user.orgId}/${facilityId}/${values.role}`;
 
-            // Chuẩn bị payload theo đúng DTO KeycloakUser.java
-            const payload = {
+            const userPayload = {
                 username: values.username,
-                password: values.password, // Tạm thời cho phép set pass lúc tạo, thực tế có thể gửi email auto
+                password: values.password, 
                 firstName: values.firstName,
                 lastName: values.lastName,
                 email: values.email,
                 phone: values.phone,
                 identityNumber: values.identityNumber,
                 group: groupString, 
+                avatarUrl: "string",
             };
 
-            await authApi.register(payload);
-            message.success("Tạo tài khoản nhân viên thành công!");
+            const formData = new FormData();
+            formData.append("request", JSON.stringify(userPayload));
+
+            fileList.forEach(file => {
+                if (file.originFileObj) {
+                    formData.append("files", file.originFileObj);
+                }
+            });
+
+            await authApi.register(formData); 
             
-            // Chuyển hướng về lại trang danh sách nhân viên
-            navigate("/manufacturer/staff"); 
+            message.success("Tạo tài khoản nhân viên thành công!");
+            navigate("/distributor/staff"); 
             
         } catch (error: any) {
             console.error(error);
@@ -77,7 +86,7 @@ export default function DistributorWarehouseCreateStaff() {
                 style={{ padding: 24, background: '#fff', borderRadius: 8 }}
             >
                 <Row gutter={24}>
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Họ (Last Name)"
                             name="lastName"
@@ -87,7 +96,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
                     
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Tên (First Name)"
                             name="firstName"
@@ -97,7 +106,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Tên đăng nhập (Username)"
                             name="username"
@@ -107,7 +116,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Mật khẩu khởi tạo"
                             name="password"
@@ -117,7 +126,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Email"
                             name="email"
@@ -130,7 +139,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Số điện thoại"
                             name="phone"
@@ -140,7 +149,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Số CCCD / CMND"
                             name="identityNumber"
@@ -150,7 +159,7 @@ export default function DistributorWarehouseCreateStaff() {
                         </Form.Item>
                     </Col>
 
-                    <Col span={12}>
+                    <Col xs={24} sm={12}>
                         <Form.Item
                             label="Phân quyền (Vai trò)"
                             name="role"
@@ -160,6 +169,25 @@ export default function DistributorWarehouseCreateStaff() {
                                 <Select.Option value="MEMBER">Nhân viên</Select.Option>
                                 <Select.Option value="ADMIN">Quản lý</Select.Option>
                             </Select>
+                        </Form.Item>
+                    </Col>
+                </Row>
+
+                <Divider dashed />
+
+                <Row>
+                    <Col span={24}>
+                        <Form.Item label="Hồ sơ minh chứng (CCCD, Hợp đồng lao động, Bằng cấp...)">
+                            <Dragger 
+                                multiple={true} 
+                                beforeUpload={() => false}
+                                fileList={fileList}
+                                onChange={(info) => setFileList(info.fileList)}
+                                accept=".pdf,.png,.jpg,.jpeg"
+                            >
+                                <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+                                <p className="ant-upload-text">Kéo thả hoặc nhấp để tải file PDF/Ảnh lên</p>
+                            </Dragger>
                         </Form.Item>
                     </Col>
                 </Row>

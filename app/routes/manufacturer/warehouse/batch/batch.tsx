@@ -15,7 +15,8 @@ export default function ManufacturerWarehouseBatch() {
     const [loading, setLoading] = useState(false);
     const [page, setPage] = useState(1);
     const [total, setTotal] = useState(0);
-    const pageSize = 10;
+    const pageSize = 7;
+    const [searchTerm, setSearchTerm] = useState("");
     
     const { user } = useAuth();
 
@@ -37,8 +38,8 @@ export default function ManufacturerWarehouseBatch() {
         setLoading(true);
         try {
             const result = await drugBatchApi.getAll({
-                page: page,
-                size: pageSize,
+                page: 1,
+                size: 1000,
                 orgId: user?.orgId ?? undefined,
             });
             
@@ -73,8 +74,20 @@ export default function ManufacturerWarehouseBatch() {
                 })
             );
 
-            setBatches(enrichedBatches);
-            setTotal(result.total || result.totalElements || enrichedBatches.length);
+            let filteredBatches = enrichedBatches;
+            if (searchTerm) {
+                const lowerSearch = searchTerm.toLowerCase();
+                filteredBatches = enrichedBatches.filter((item: any) => 
+                    item.batchId?.toLowerCase().includes(lowerSearch) || 
+                    item.drugName?.toLowerCase().includes(lowerSearch)
+                );
+            }
+
+            const startIndex = (page - 1) * pageSize;
+            const pagedData = filteredBatches.slice(startIndex, startIndex + pageSize);
+
+            setBatches(pagedData);
+            setTotal(filteredBatches.length);
             
         } catch (error) {
             console.error("Fetch error:", error);
@@ -86,7 +99,11 @@ export default function ManufacturerWarehouseBatch() {
 
     useEffect(() => {
         fetchBatches();
-    }, [page, user?.orgId]);
+    }, [page, user?.orgId, searchTerm]);
+
+    useEffect(() => {
+        setPage(1);
+    }, [searchTerm]);
 
     return (
         <>
@@ -96,6 +113,8 @@ export default function ManufacturerWarehouseBatch() {
                     <Input
                         placeholder="Tìm kiếm mã lô, mã thuốc..."
                         size="large"
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        allowClear
                         suffix={<SearchOutlined />}
                     />
                 </Flex>
@@ -121,7 +140,8 @@ export default function ManufacturerWarehouseBatch() {
                 <BatchTable 
                     dataSource={batches}
                     loading={loading}
-                    pagination={{ current: page, pageSize: pageSize, total: total }} 
+                    pagination={{ current: page, pageSize: pageSize }} 
+                    total={total}
                     onPageChange={(newPage: number) => setPage(newPage)}
                 />
             </Layout.Content>

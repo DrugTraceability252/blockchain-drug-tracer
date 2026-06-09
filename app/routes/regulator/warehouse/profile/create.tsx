@@ -136,11 +136,6 @@ export default function RegulatorWarehouseCreateProfile() {
                             <div style={{padding: 8}}>
                             <Row gutter={16}>
                                 <Col span={8}>
-                                    <Form.Item label="Mã thuốc (Drug ID)" name="drugId" rules={[{ required: true }]}>
-                                        <Input placeholder="VD: DRUG_HAPA_001" />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={8}>
                                     <Form.Item label="Tên thuốc" name="drugName" rules={[{ required: true }]}>
                                         <Input placeholder="VD: Hapacol 500" />
                                     </Form.Item>

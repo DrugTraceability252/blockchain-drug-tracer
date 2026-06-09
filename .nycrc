@@ -1,0 +1,21 @@
+{
+  "all": true,
+  "include": [
+    "app/**/*.{ts,tsx}"
+  ],
+  "exclude": [
+    "app/assets/**",
+    "app/styles/**",
+    "app/types/**",
+    "app/**/interface.ts",
+    "app/entry.server.tsx",
+    "app/entry.client.tsx"
+  ],
+  "reporter": [
+    "html",
+    "text",
+    "text-summary"
+  ],
+  "temp-dir": ".nyc_output",
+  "report-dir": "coverage"
+}
