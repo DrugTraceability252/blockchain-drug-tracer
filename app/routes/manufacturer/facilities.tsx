@@ -18,7 +18,6 @@ export default function FacilityList() {
     const [submitting, setSubmitting] = useState(false);
     const [open, setOpen] = useState(false);
     
-    // 🌟 Lấy danh sách dùng orgId thực tế
     const fetchFacilities = useCallback(async () => {
         if (!user?.orgId) return;
 
@@ -34,12 +33,10 @@ export default function FacilityList() {
         }
     }, [user?.orgId]);
 
-    // Gọi API khi vừa vào trang
     useEffect(() => {
         fetchFacilities();
     }, [fetchFacilities]);
 
-    // Cấu hình Header Action
     useEffect(() => {
         setHeaderActions(
             <Flex justify='center' align='center' gap='small'>
@@ -59,7 +56,6 @@ export default function FacilityList() {
         return () => setHeaderActions(null);
     }, [setHeaderActions, form]);
 
-    // 🌟 Hàm xử lý submit Form tạo mới
     const handleCreate = async (values: any) => {
         if (!user?.orgId) {
             message.error("Không xác định được tổ chức của bạn!");
@@ -68,7 +64,6 @@ export default function FacilityList() {
 
         setSubmitting(true);
         try {
-            // 🌟 Payload bám sát 100% RegisterFacilityRequest.java
             const payload = {
                 facilityName: values.facilityName,
                 facilityType: values.facilityType, 
@@ -81,7 +76,7 @@ export default function FacilityList() {
             message.success("Tạo cơ sở thành công!");
             
             setOpen(false);
-            fetchFacilities(); // Refresh lại danh sách sau khi tạo
+            fetchFacilities();
 
         } catch (error: any) {
             console.error("Lỗi tạo cơ sở:", error);
@@ -181,7 +176,6 @@ export default function FacilityList() {
                                 name="facilityType"
                                 rules={[{ required: true, message: "Chọn loại" }]}
                             >
-                                {/* 🌟 Cập nhật Enum chuẩn từ Backend */}
                                 <Select size="large" options={[
                                     { value: "FACTORY", label: "Nhà máy (FACTORY)" },
                                     { value: "WAREHOUSE", label: "Kho hàng (WAREHOUSE)" },

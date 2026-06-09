@@ -94,4 +94,8 @@ export const drugBatchApi = {
     getBoxHistory: (boxId: string, batchId: string) => {
         return apiClient(`/drug-boxes/${boxId}/history?batchId=${batchId}`, { method: 'GET' });
     },
+
+    updateBoxStatus: (boxId: string, status: string) => {
+        return apiClient(`/drug-boxes/${boxId}/status?status=${status}`, { method: 'PATCH' });
+    }
 };

@@ -13,6 +13,12 @@ const batchStatusMap: Record<string, { color: string; label: string }> = {
     RECALLED: { color: "volcano", label: "Thu hồi" },
 };
 
+const qcStatusMap: Record<string, { color: string; label: string }> = {
+    PASSED: { color: "green", label: "Đạt chuẩn" },
+    FAILED: { color: "red", label: "Không đạt" },
+    PENDING: { color: "orange", label: "Chờ kiểm định" }
+};
+
 export const columns = (onView?: (record: any) => void) => [
     {
         title: "Mã lô & QR",
@@ -51,12 +57,21 @@ export const columns = (onView?: (record: any) => void) => [
         )
     },
     {
-        title: "Sản lượng",
+        title: "Số lượng",
         dataIndex: "totalBoxes",
         key: "totalBoxes",
         render: (total: number, record: any) => (
             <Text>{total} {record.unit || 'hộp'}</Text>
         )
+    },
+    {
+        title: "Trạng thái QC",
+        dataIndex: "qcStatus",
+        key: "qcStatus",
+        render: (status: string) => {
+            const config = qcStatusMap[status] || { color: "default", label: status };
+            return <Tag color={config.color}>{config.label}</Tag>;
+        }
     },
     {
         title: "Hạn sử dụng",

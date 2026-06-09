@@ -1,71 +1,74 @@
-import { DownloadOutlined, PlusOutlined, WarningOutlined } from "@ant-design/icons";
-import { Button, Col, Flex, Row, message, Spin } from "antd";
+import { SafetyCertificateOutlined, FileTextOutlined, TeamOutlined } from "@ant-design/icons";
+import { Col, Flex, Row, message, Spin } from "antd";
 import StatCard from "components/Card/StatCard";
 import SummaryCard from "components/Card/SummaryCard";
-import { useHeaderActions } from "contexts/HeaderActionsContext";
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router";
 
 import { drugProfileApi } from "api/drugProfileApi";
 import { facilityApi } from "api/facilityApi";
 import { employeeApi } from "api/employeeApi";
+import { drugBatchApi } from "api/drugBatchApi";
 import { useAuth } from "auth/useAuth";
 
 export default function ManufacturerDashboard() {
-    const { setHeaderActions } = useHeaderActions();
     const { user } = useAuth();
 
-    // 🌟 Quản lý State chứa các con số thống kê
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         totalDrugs: 0,
+        pendingDrugs: 0,
         totalFacilities: 0,
         activeStaff: 0,
         pendingStaff: 0,
-        
-        // Mấy cái này bạn chưa có API nên tạm để mock data
-        warnings: 1,
-        totalBatches: 5288,
-        totalBoxes: 70856,
-        shipping: 20,
-        waiting: 5,
+        totalBatches: 0,
+        pendingQC: 0,
+        totalBoxes: 0,
+        shipping: 0,
+        waiting: 0,
     });
 
-    // 🌟 Hàm gom tất cả API lại và gọi cùng 1 lúc cho lẹ
     const fetchDashboardData = useCallback(async () => {
         if (!user?.orgId) return;
 
         try {
             setLoading(true);
             
-            // Dùng Promise.all để 3 API chạy song song cùng lúc
-            const [drugsRes, facilitiesRes, staffRes] = await Promise.all([
-                // Lấy Thuốc: Chỉ cần size: 1 vì ta chỉ quan tâm biến 'total'
-                drugProfileApi.getAll({ manufacturerOrgId: user.orgId, page: 1, size: 1 }),
-                
-                // Lấy Cơ sở: Cũng chỉ cần size: 1
-                facilityApi.getByOrgId(user.orgId, { page: 1, size: 1 }),
-                
-                // Lấy Nhân sự: Lấy nhiều một chút để lọc tại Frontend
-                employeeApi.getAll({ orgId: user.orgId, page: 1, size: 100 })
+            const [drugsRes, facilitiesRes, staffRes, batchesRes] = await Promise.all([
+                drugProfileApi.getAll({ manufacturerOrgId: user.orgId, page: 0, size: 1000 }), 
+                facilityApi.getByOrgId(user.orgId, { page: 0, size: 100 }),
+                employeeApi.getAll({ orgId: user.orgId, page: 0, size: 1000 }),
+                drugBatchApi.getAll({ orgId: user.orgId, page: 0, size: 2000 }) 
             ]);
 
-            // Bóc tách dữ liệu nhân sự (Lọc theo trạng thái enabled)
-            const allStaff = staffRes.data || [];
+            const allDrugs = drugsRes.data || drugsRes.content || [];
+            const pendingDrugsCount = allDrugs.filter((d: any) => d.approveStatus === "PENDING").length;
+
+            const allStaff = staffRes.data || staffRes.content || [];
             const activeStaffCount = allStaff.filter((s: any) => s.enabled === true).length;
             const pendingStaffCount = allStaff.filter((s: any) => s.enabled === false).length;
 
-            // Cập nhật lên màn hình
-            setStats(prev => ({
-                ...prev,
-                totalDrugs: drugsRes.total || 0,
-                totalFacilities: facilitiesRes.total || facilitiesRes.data?.length || 0,
+            const allBatches = batchesRes.data || batchesRes.content || batchesRes || [];
+            const pendingQCCount = allBatches.filter((b: any) => b.qcStatus === "PENDING").length;
+            const totalBoxesCount = allBatches.reduce((sum: number, batch: any) => sum + (batch.totalBoxes || 0), 0);
+            const shippingCount = allBatches.filter((b: any) => b.status === "IN_TRANSIT").length;
+            const waitingCount = allBatches.filter((b: any) => b.qcStatus === "PENDING" || b.status === "PRODUCED").length;
+
+            setStats({
+                totalDrugs: drugsRes.totalElements || drugsRes.total || allDrugs.length,
+                pendingDrugs: pendingDrugsCount,
+                totalFacilities: facilitiesRes.totalElements || facilitiesRes.total || facilitiesRes.data?.length || 0,
                 activeStaff: activeStaffCount,
-                pendingStaff: pendingStaffCount
-            }));
+                pendingStaff: pendingStaffCount,
+                totalBatches: batchesRes.totalElements || batchesRes.total || allBatches.length,
+                pendingQC: pendingQCCount,
+                totalBoxes: totalBoxesCount,
+                shipping: shippingCount,
+                waiting: waitingCount
+            });
 
         } catch (error) {
-            console.error("Lỗi tải Dashboard:", error);
+            console.error(error);
             message.error("Không thể tải dữ liệu thống kê!");
         } finally {
             setLoading(false);
@@ -76,45 +79,44 @@ export default function ManufacturerDashboard() {
         fetchDashboardData();
     }, [fetchDashboardData]);
 
-    // Action Header
-    useEffect(() => {
-        setHeaderActions(
-            <Flex justify='center' align='center' gap='small'>
-                <Link to="/manufacturer/warehouse/batch/create">
-                    <Button variant='outlined' icon={<DownloadOutlined />} iconPlacement="end" size="large">
-                        Tải xuống báo cáo
-                    </Button>
-                </Link>
-            </Flex>
-        );
-        return () => setHeaderActions(null);
-    }, [setHeaderActions]);
-
-
     return (
         <div style={{ padding: 8 }}>
             <Spin spinning={loading} tip="Đang tổng hợp dữ liệu..." size="large">
                 <Row gutter={[16, 16]}>
-                    <Col xs={24} md={12}>
-                        {/* Bọc Link để bấm vào Card nhảy sang trang tương ứng luôn */}
-                        <Link to="/manufacturer/drug-profiles" style={{ display: 'block' }}>
+                    <Col xs={24} md={8}>
+                        <Link to="/manufacturer/warehouse/batch" style={{ display: 'block' }}>
                             <SummaryCard
-                                icon={<PlusOutlined/>}
-                                value={stats.totalDrugs}
-                                label="Hồ sơ thuốc"
-                                footerText="Xem danh sách chi tiết"
+                                icon={<SafetyCertificateOutlined />}
+                                value={stats.pendingQC}
+                                label="Lô thuốc chờ kiểm định"
+                                footerText="Đang chờ Cục Quản lý duyệt"
                                 color="blue"
                             />
                         </Link>
                     </Col>
-                    <Col xs={24} md={12}>
-                        <SummaryCard
-                            icon={<WarningOutlined/>}
-                            value={`0${stats.warnings}`}
-                            label="Cảnh báo hệ thống"
-                            footerText="Xem báo cáo chi tiết"
-                            color="red"
-                        />
+                    
+                    <Col xs={24} md={8}>
+                        <Link to="/manufacturer/warehouse/profile" style={{ display: 'block' }}>
+                            <SummaryCard
+                                icon={<FileTextOutlined />}
+                                value={stats.pendingDrugs}
+                                label="Hồ sơ chờ cấp phép"
+                                footerText="Hồ sơ đang chờ duyệt"
+                                color="blue"
+                            />
+                        </Link>
+                    </Col>
+
+                    <Col xs={24} md={8}>
+                        <Link to="/manufacturer/staff" style={{ display: 'block' }}>
+                            <SummaryCard
+                                icon={<TeamOutlined />}
+                                value={stats.pendingStaff}
+                                label="Nhân viên chờ duyệt"
+                                footerText="Duyệt tài khoản mới"
+                                color="blue"
+                            />
+                        </Link>
                     </Col>
                 </Row>
 
@@ -126,16 +128,16 @@ export default function ManufacturerDashboard() {
                                     title="Quản lý Cơ sở"
                                     items={[
                                         { value: stats.totalFacilities, label: "Tổng số cơ sở trực thuộc" },
-                                        { value: "03", label: "Đạt chuẩn GSP/GMP" }, // Chờ BE có API thì map vô
+                                        { value: "03", label: "Đạt chuẩn GSP/GMP" }, 
                                     ]}
                                 />
                             </Link>
                             <Link to="/manufacturer/warehouse/batch">
                                 <StatCard
-                                    title="Quản lý lô thuốc"
+                                    title="Quản lý số lượng sản xuất"
                                     items={[
-                                        { value: stats.totalBoxes.toLocaleString(), label: "Hộp thuốc" },
-                                        { value: stats.totalBatches.toLocaleString(), label: "Lô thuốc" },
+                                        { value: stats.totalBoxes.toLocaleString(), label: "Hộp thuốc đã đóng gói" },
+                                        { value: stats.totalBatches.toLocaleString(), label: "Lô thuốc đã sản xuất" },
                                     ]}
                                 />
                             </Link>
@@ -147,7 +149,7 @@ export default function ManufacturerDashboard() {
                                 title="Vận chuyển (Logistics)"
                                 items={[
                                     { value: stats.shipping, label: "Lô thuốc đang vận chuyển" },
-                                    { value: `0${stats.waiting}`, label: "Lô thuốc đang chờ" },
+                                    { value: stats.waiting < 10 && stats.waiting > 0 ? `0${stats.waiting}` : stats.waiting, label: "Lô thuốc đang lưu kho / chờ QC" },
                                 ]}
                             />
                             
@@ -157,7 +159,7 @@ export default function ManufacturerDashboard() {
                                     items={[
                                         { value: stats.activeStaff, label: "Nhân viên đang hoạt động" },
                                         { 
-                                            value: stats.pendingStaff < 10 ? `0${stats.pendingStaff}` : stats.pendingStaff, 
+                                            value: stats.pendingStaff < 10 && stats.pendingStaff > 0 ? `0${stats.pendingStaff}` : stats.pendingStaff, 
                                             label: "Tài khoản chờ duyệt" 
                                         },
                                     ]}

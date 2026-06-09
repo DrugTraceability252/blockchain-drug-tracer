@@ -33,10 +33,13 @@ export default function RegulatorCompanyDetail() {
     const [loading, setLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
 
-    // 🌟 STATE CHO TÍNH NĂNG XEM TÀI LIỆU
     const [isDocModalOpen, setIsDocModalOpen] = useState(false);
     const [documents, setDocuments] = useState<string[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
+
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [previewTitle, setPreviewTitle] = useState<string>("");
+
 
     const fetchOrgDetail = useCallback(async () => {
         if (!id) return;
@@ -120,14 +123,16 @@ export default function RegulatorCompanyDetail() {
         }
     };
 
-    // 🌟 HÀM XEM TRƯỚC (PREVIEW) FILE
     const handlePreviewFile = async (filename: string) => {
         if (!id) return;
-        const hide = message.loading(`Đang tải file ${filename}...`, 0);
+        const hide = message.loading(`Đang mở file ${filename}...`, 0);
         try {
             const blob = await organizationApi.getPreviewDocument(id, filename);
             const fileURL = URL.createObjectURL(blob);
-            window.open(fileURL, '_blank');
+            
+            setPreviewUrl(fileURL);
+            setPreviewTitle(filename);
+            
         } catch (error) {
             console.error("Lỗi preview file:", error);
             message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
@@ -230,7 +235,6 @@ export default function RegulatorCompanyDetail() {
                 </Col>
             </Row>
 
-            {/* 🌟 MODAL DANH SÁCH FILE */}
             <Modal
                 title={`Tài liệu đính kèm - ${orgDetail.orgName}`}
                 open={isDocModalOpen}
@@ -266,6 +270,38 @@ export default function RegulatorCompanyDetail() {
                             </List.Item>
                         )}
                     />
+                )}
+            </Modal>
+            <Modal
+                title={`Tài liệu đính kèm - ${orgDetail.orgName}`}
+                open={!!previewUrl}
+                onCancel={() => {
+                    if (previewUrl) URL.revokeObjectURL(previewUrl);
+                    setPreviewUrl(null);
+                }}
+                footer={null}
+                width={1000}
+                style={{ top: 20 }}
+                destroyOnClose
+            >
+                {previewUrl && (
+                    previewTitle.toLowerCase().endsWith('.pdf') ? (
+                        <iframe 
+                            src={previewUrl} 
+                            width="100%" 
+                            height="700px"
+                            style={{ border: 'none', borderRadius: 8 }} 
+                            title="Preview PDF"
+                        />
+                    ) : (
+                        <Flex justify="center" align="center" style={{ width: '100%', minHeight: '500px' }}>
+                            <img 
+                                src={previewUrl} 
+                                alt="Preview" 
+                                style={{ maxWidth: '100%', maxHeight: '800px', objectFit: 'contain' }} 
+                            />
+                        </Flex>
+                    )
                 )}
             </Modal>
         </Layout.Content>

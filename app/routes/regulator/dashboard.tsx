@@ -38,12 +38,10 @@ export default function RegulatorDashboard() {
         pendingStaff: 0,
     });
 
-    // 🌟 1. Bóc tách ra các giá trị cơ bản (Boolean và String) ĐỂ TRÁNH LẶP VÔ HẠN
     const isLoggedIn = !!user; 
     const currentOrgId = user?.orgId || "";
 
     const fetchDashboardData = useCallback(async () => {
-        // 🌟 2. Kiểm tra bằng biến boolean
         if (!isLoggedIn) return;
 
         try {
@@ -53,11 +51,8 @@ export default function RegulatorDashboard() {
                 organizationApi.getAll({ page: 0, size: 100 }),
                 drugProfileApi.getAll({ page: 0, size: 100 }),
                 drugBatchApi.getAll({ page: 0, size: 100 }),
-                // 🌟 3. Truyền currentOrgId vào đây
                 employeeApi.getAll({ orgId: currentOrgId, page: 0, size: 100 }) 
             ]);
-
-            // ... (Phần logic tính toán stats giữ nguyên y hệt lúc nãy) ...
             
             const allOrgs = orgsRes.data || orgsRes.content || [];
             const pendingOrgsCount = allOrgs.filter((o: any) => o.status === "PENDING").length;
@@ -94,47 +89,60 @@ export default function RegulatorDashboard() {
         } finally {
             setLoading(false);
         }
-    }, [isLoggedIn, currentOrgId]); // 🌟 4. Truyền 2 biến cơ bản này vào mảng
+    }, [isLoggedIn, currentOrgId]); 
 
     useEffect(() => {
         fetchDashboardData();
     }, [fetchDashboardData]);
 
-    useEffect(() => {
-        setHeaderActions(
-            <Flex justify='center' align='center' gap='small'>
-                <Button variant='outlined' icon={<FileTextOutlined />} size="large" onClick={() => message.info("Đang xuất báo cáo định kỳ...")}>
-                    Xuất báo cáo
-                </Button>
-            </Flex>
-        );
-        return () => setHeaderActions(null);
-    }, [setHeaderActions]);
-
     return (
         <div style={{ padding: 8 }}>
             <Spin spinning={loading} tip="Đang đồng bộ dữ liệu Blockchain..." size="large">
-                
                 <Row gutter={[16, 16]}>
-                    <Col xs={24} md={12}>
-                        <Link to="/regulator/batch" style={{ display: 'block' }}>
+                    <Col xs={24} sm={12} lg={6}>
+                        <Link to="/regulator/warehouse/batch" style={{ display: 'block' }}>
                             <SummaryCard
                                 icon={<SafetyCertificateOutlined />}
                                 value={stats.pendingQC}
-                                label="Lô thuốc chờ kiểm định (QC)"
-                                footerText="Nhấp để tiến hành kiểm định ngay"
+                                label="Lô thuốc chờ kiểm định"
+                                footerText="Tiến hành kiểm định ngay"
                                 color="blue"
                             />
                         </Link>
                     </Col>
-                    <Col xs={24} md={12}>
-                        <Link to="/regulator/warehouse/batch" style={{ display: 'block' }}>
+
+                    <Col xs={24} sm={12} lg={6}>
+                        <Link to="/regulator/company/register" style={{ display: 'block' }}>
                             <SummaryCard
-                                icon={<WarningOutlined />}
-                                value={stats.failedQC}
-                                label="Lô thuốc vi phạm / Bị thu hồi"
-                                footerText="Xem danh sách cảnh báo"
-                                color="red"
+                                icon={<BankOutlined />}
+                                value={stats.pendingOrgs}
+                                label="Công ty chờ duyệt"
+                                footerText="Xem danh sách đăng ký"
+                                color="blue"
+                            />
+                        </Link>
+                    </Col>
+
+                    <Col xs={24} sm={12} lg={6}>
+                        <Link to="/regulator/warehouse/profile" style={{ display: 'block' }}>
+                            <SummaryCard
+                                icon={<FileTextOutlined />}
+                                value={stats.pendingDrugs}
+                                label="Hồ sơ thuốc chờ duyệt"
+                                footerText="Xem danh sách hồ sơ"
+                                color="blue"
+                            />
+                        </Link>
+                    </Col>
+
+                    <Col xs={24} sm={12} lg={6}>
+                        <Link to="/regulator/staff/register" style={{ display: 'block' }}>
+                            <SummaryCard
+                                icon={<TeamOutlined />}
+                                value={stats.pendingStaff}
+                                label="Nhân viên chờ duyệt"
+                                footerText="Duyệt tài khoản mới"
+                                color="blue"
                             />
                         </Link>
                     </Col>

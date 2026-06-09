@@ -66,7 +66,7 @@ export default function RegulatorWarehouseProfile() {
                                 placeholder="-- Chọn loại thuốc --"
                                 size="large"
                                 style={{ width: "100%" }}
-                                onChange={(value) => setDrugType(value ? value[0] : null)}
+                                onChange={(value) => setDrugType(value ? value[0] as string : null)}
                                 changeOnSelect
                             />
                         </Flex>
@@ -74,7 +74,11 @@ export default function RegulatorWarehouseProfile() {
                 </Flex>
             </Layout.Header>
             <Layout.Content className="contentLayoutTableLevel">
-                <MedicineTable searchTerm={searchTerm} drugType={drugType} />
+                <MedicineTable 
+                    searchTerm={searchTerm} 
+                    drugType={drugType} 
+                    status="PENDING" 
+                />
             </Layout.Content>
         </>
     );

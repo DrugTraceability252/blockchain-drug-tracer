@@ -95,16 +95,11 @@ export default function ManufacturerWarehouseCreateProfile() {
                             <div style={{padding: 8}}>
                             <Row gutter={16}>
                                 <Col span={8}>
-                                    <Form.Item label="Mã thuốc (Drug ID)" name="drugId" rules={[{ required: true }]}>
-                                        <Input placeholder="VD: DRUG_HAPA_001" />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={8}>
                                     <Form.Item label="Tên thuốc" name="drugName" rules={[{ required: true }]}>
                                         <Input placeholder="VD: Hapacol 500" />
                                     </Form.Item>
                                 </Col>
-                                <Col span={4}>
+                                <Col span={8}>
                                     <Form.Item label="Nhóm thuốc" name="drugType" rules={[{ required: true }]}>
                                         <Select options={[
                                             { value: "OTC", label: "Không kê đơn (OTC)" },
@@ -113,7 +108,7 @@ export default function ManufacturerWarehouseCreateProfile() {
                                         ]} />
                                     </Form.Item>
                                 </Col>
-                                <Col span={4}>
+                                <Col span={8}>
                                     <Form.Item label="Dạng bào chế" name="dosageForm" rules={[{ required: true }]}>
                                         <Select options={[
                                             { value: "TABLET", label: "Viên nén (TABLET)" },

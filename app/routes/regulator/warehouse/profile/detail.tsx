@@ -29,6 +29,10 @@ export default function MedicineDetail() {
     const [documents, setDocuments] = useState<string[]>([]);
     const [loadingDocs, setLoadingDocs] = useState(false);
 
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+    const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+    const [previewFileName, setPreviewFileName] = useState<string>("");
+
     const batchColumns = [
         { title: 'Mã lô', dataIndex: 'batchId', key: 'batchId', render: (text: string) => <Text strong>{text}</Text> },
         { title: 'Số lượng hộp', dataIndex: 'totalBoxes', key: 'totalBoxes' },
@@ -208,13 +212,23 @@ export default function MedicineDetail() {
             const blob = await drugProfileApi.getPreviewDocument(targetId, filename);
             
             const fileURL = URL.createObjectURL(blob);
-            window.open(fileURL, '_blank');
+            setPreviewUrl(fileURL);
+            setPreviewFileName(filename);
+            setIsPreviewModalOpen(true);
             
         } catch (error) {
             console.error("Lỗi preview file:", error);
             message.error("Có lỗi khi mở file. File có thể không tồn tại hoặc lỗi mạng.");
         } finally {
             hide();
+        }
+    };
+
+    const handleClosePreview = () => {
+        setIsPreviewModalOpen(false);
+        if (previewUrl) {
+            URL.revokeObjectURL(previewUrl);
+            setPreviewUrl(null);
         }
     };
 
@@ -386,6 +400,26 @@ export default function MedicineDetail() {
                             </List.Item>
                         )}
                     />
+                )}
+            </Modal>
+
+            <Modal
+                title={`Xem trước tài liệu: ${previewFileName}`}
+                open={isPreviewModalOpen}
+                onCancel={handleClosePreview}
+                footer={<Button onClick={handleClosePreview}>Đóng</Button>}
+                width={1000}
+                style={{ top: 20 }}
+                destroyOnClose
+            >
+                {previewUrl ? (
+                    <iframe 
+                        src={previewUrl} 
+                        style={{ width: '100%', height: '80vh', border: 'none' }} 
+                        title={previewFileName}
+                    />
+                ) : (
+                    <Flex justify="center" align="center" style={{ height: '50vh' }}><Spin /></Flex>
                 )}
             </Modal>
         </div>

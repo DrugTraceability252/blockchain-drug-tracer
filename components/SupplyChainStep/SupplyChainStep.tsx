@@ -24,7 +24,6 @@ export default function SupplyChainStep({
     current?: number; 
     isRecalled?: boolean 
 }) {
-    // Nếu lô thuốc bị thu hồi, hiển thị màu đỏ (volcano). Ngược lại hiển thị màu xanh lá (#00a870)
     const activeColor = isRecalled ? "#fa541c" : "#00a870";
 
     return (

@@ -47,18 +47,14 @@ export default function BatchDetail() {
     const { user } = useAuth();
 
     const [loading, setLoading] = useState(false);
-    const [transferring, setTransferring] = useState(false);
     const [boxes, setBoxes] = useState([]);
     const [batchDetail, setBatchDetail] = useState<any>(null);
     const [drugName, setDrugName] = useState<string>("Đang tải...");
     const [facilityName, setFacilityName] = useState<string>("Đang tải...");
 
-    const [isTransferModalVisible, setIsTransferModalVisible] = useState(false);
-    const [transferForm] = Form.useForm();
-    const [orgList, setOrgList] = useState<any[]>([]);
-    const [facilityList, setFacilityList] = useState<any[]>([]);
-    const [loadingOrgs, setLoadingOrgs] = useState(false);
-    const [loadingFacilities, setLoadingFacilities] = useState(false);
+    const [isRetailModalVisible, setIsRetailModalVisible] = useState(false);
+    const [retailForm] = Form.useForm();
+    const [retailing, setRetailing] = useState(false);
 
     const [isHistoryVisible, setIsHistoryVisible] = useState(false);
     const [historyData, setHistoryData] = useState<any[]>([]);
@@ -187,56 +183,38 @@ export default function BatchDetail() {
         }
     }, [isHistoryVisible, id, loadGlobalFacilityDict]);
 
-    useEffect(() => {
-        if (isTransferModalVisible) {
-            const fetchOrgs = async () => {
-                setLoadingOrgs(true);
-                try {
-                    const res = await organizationApi.getAll({ page: 0, size: 100 }); 
-                    setOrgList(res.data || res.content || res || []);
-                } catch (e) { message.error("Không thể tải danh sách tổ chức đối tác!"); } 
-                finally { setLoadingOrgs(false); }
-            };
-            fetchOrgs();
-        } else {
-            setFacilityList([]); 
-        }
-    }, [isTransferModalVisible]);
-
-    const handleOrgChange = async (orgId: string) => {
-        transferForm.setFieldsValue({ toFacilityId: undefined });
-        setFacilityList([]);
-        if (!orgId) return;
-
-        setLoadingFacilities(true);
+    const handleRetailSubmit = async (values: any) => {
+        setRetailing(true);
         try {
-            const res = await organizationApi.getFacilities(orgId);
-            setFacilityList(res.data || res || []);
-        } catch (e) { message.error("Không thể tải danh sách cơ sở!"); } 
-        finally { setLoadingFacilities(false); }
-    };
+            const availableBoxes = boxes.filter((b: any) => b.status === 'STORED' || b.status === 'IN_STORAGE');
+            let boxesToSell: any[] = [];
 
-    const handleTransferSubmit = async (values: any) => {
-        setTransferring(true);
-        try {
-            const payload = {
-                batchId: id as string,
-                toOrgId: values.toOrgId,
-                toFacilityId: values.toFacilityId,
-                note: values.note ? values.note : ""
-            };
+            if (values.boxId) {
+                boxesToSell = [{ boxId: values.boxId }];
+            } else {
+                boxesToSell = availableBoxes.slice(0, values.quantity || 1);
+            }
             
-            await drugBatchApi.transfer(payload);
+            if (boxesToSell.length === 0) {
+                message.warning("Không có hộp thuốc nào khả dụng để bán!");
+                setRetailing(false);
+                return;
+            }
+
+            for (const box of boxesToSell) {
+                await drugBatchApi.updateBoxStatus(box.boxId, 'SOLD');
+            }
             
-            message.success("Xuất lô thuốc thành công! Trạng thái đã chuyển sang Đang vận chuyển.");
-            setIsTransferModalVisible(false);
-            transferForm.resetFields();
+            message.success(`Đã bán thành công ${boxesToSell.length} hộp thuốc!`);
+            setIsRetailModalVisible(false);
+            retailForm.resetFields();
             fetchBatchDetail();
             fetchBox();
         } catch (error: any) {
-            message.error("Có lỗi xảy ra khi xuất lô thuốc! (Vui lòng kiểm tra log Backend)");
+            console.error(error);
+            message.error("Có lỗi xảy ra khi bán thuốc! (Vui lòng kiểm tra lại)");
         } finally {
-            setTransferring(false);
+            setRetailing(false);
         }
     };
 
@@ -305,7 +283,7 @@ export default function BatchDetail() {
     };
 
     useEffect(() => {
-        const canTransfer = batchDetail?.status === "STORED";
+        const canRetail = batchDetail?.status === "STORED" || batchDetail?.status === "IN_STORAGE";
 
         setHeaderActions(
             <Flex gap="small" align="center">
@@ -321,24 +299,30 @@ export default function BatchDetail() {
                 <Button 
                     type="primary" 
                     size="large" 
-                    onClick={() => setIsTransferModalVisible(true)}
-                    loading={transferring}
-                    disabled={!canTransfer}
+                    onClick={() => {
+                        retailForm.resetFields();
+                        retailForm.setFieldsValue({ quantity: 1 });
+                        setIsRetailModalVisible(true);
+                    }}
+                    loading={retailing}
+                    disabled={!canRetail}
                 >
-                    {canTransfer ? "Xuất lô thuốc" : "Không thể xuất"}
+                    {canRetail ? "Bán lẻ thuốc" : "Không thể bán"}
                 </Button>
             </Flex>
         );
         return () => setHeaderActions(null);
-    }, [setHeaderActions, transferring, batchDetail?.status]);
+    }, [setHeaderActions, retailing, batchDetail?.status, retailForm]);
 
     const currentStep = useMemo(() => {
         if (!batchDetail?.status) return 0;
         switch (batchDetail.status) {
             case "PRODUCED": return 0;
             case "IN_TRANSIT": return 1;
-            case "STORED": return 2;
-            case "DISTRIBUTED": return 3;
+            case "STORED": 
+            case "IN_STORAGE": return 3;
+            case "DISTRIBUTED": 
+            case "SOLD": return 4;
             default: return 0;
         }
     }, [batchDetail?.status]);
@@ -365,7 +349,22 @@ export default function BatchDetail() {
             title: "Hành động",
             key: "action",
             render: (record: any) => (
-                <EyeOutlined onClick={() => handleOpenBoxHistory(record.boxId)} style={{ cursor: 'pointer', color: '#1890ff' }} />
+                <Flex gap="middle" align="center">
+                    <EyeOutlined onClick={() => handleOpenBoxHistory(record.boxId)} style={{ cursor: 'pointer', color: '#1890ff', fontSize: 16 }} />
+                    {(record.status === 'STORED' || record.status === 'IN_STORAGE') && (
+                        <Button 
+                            type="primary" 
+                            size="small" 
+                            onClick={() => {
+                                retailForm.resetFields();
+                                retailForm.setFieldsValue({ boxId: record.boxId, quantity: 1 });
+                                setIsRetailModalVisible(true);
+                            }}
+                        >
+                            Bán hộp này
+                        </Button>
+                    )}
+                </Flex>
             )
         }
     ];
@@ -445,48 +444,37 @@ export default function BatchDetail() {
             </Flex>
 
             <Modal
-                title="Xác nhận xuất lô thuốc (Giao hàng)"
-                open={isTransferModalVisible}
-                onOk={() => transferForm.submit()} 
+                title="Bán lẻ hộp thuốc (Xuất cho khách hàng)"
+                open={isRetailModalVisible}
+                onOk={() => retailForm.submit()} 
                 onCancel={() => {
-                    setIsTransferModalVisible(false);
-                    transferForm.resetFields();
+                    setIsRetailModalVisible(false);
+                    retailForm.resetFields();
                 }}
-                confirmLoading={transferring}
-                okText="Xác nhận xuất kho"
+                confirmLoading={retailing}
+                okText="Xác nhận Bán"
                 cancelText="Hủy bỏ"
-                okButtonProps={{ danger: true }}
+                okButtonProps={{ style: { backgroundColor: '#52c41a' } }}
             >
                 <div style={{ marginBottom: 16 }}>
-                    <p>Bạn đang tiến hành xuất lô thuốc <b>{id}</b> ra khỏi kho để bàn giao vận chuyển.</p>
-                    <p style={{ color: 'red' }}>Hành động này sẽ được ghi nhận lên Blockchain và không thể hoàn tác!</p>
+                    <p>Vui lòng chọn số lượng để bán lẻ. Bạn cũng có thể chọn bán cụ thể 1 mã hộp thuốc.</p>
                 </div>
                 
-                <Form form={transferForm} layout="vertical" onFinish={handleTransferSubmit}>
-                    <Form.Item name="toOrgId" label="Tổ chức nhận" rules={[{ required: true, message: 'Vui lòng chọn tổ chức nhận!' }]}>
+                <Form form={retailForm} layout="vertical" onFinish={handleRetailSubmit} initialValues={{ quantity: 1 }}>
+                    <Form.Item name="boxId" label="Mã hộp thuốc (Tùy chọn)">
                         <Select
                             showSearch
-                            placeholder="Chọn tổ chức đối tác..."
-                            loading={loadingOrgs}
-                            onChange={handleOrgChange}
-                            filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
-                            options={orgList.map(org => ({ label: org.orgName || org.id || org.orgId, value: org.id || org.orgId }))}
+                            allowClear
+                            placeholder="-- Chọn mã hộp cụ thể hoặc để trống --"
+                            options={boxes.filter((b: any) => b.status === 'STORED' || b.status === 'IN_STORAGE').map((b: any) => ({ label: b.boxId, value: b.boxId }))}
+                            onChange={(val) => {
+                                if (val) retailForm.setFieldsValue({ quantity: 1 });
+                            }}
                         />
                     </Form.Item>
 
-                    <Form.Item name="toFacilityId" label="Cơ sở nhận (Kho đích)" rules={[{ required: true, message: 'Vui lòng chọn cơ sở nhận!' }]}>
-                        <Select
-                            showSearch
-                            placeholder={transferForm.getFieldValue('toOrgId') ? "Chọn cơ sở / kho đích..." : "Vui lòng chọn tổ chức trước"}
-                            loading={loadingFacilities}
-                            disabled={!transferForm.getFieldValue('toOrgId') || facilityList.length === 0}
-                            filterOption={(input, option) => (option?.label ?? '').toString().toLowerCase().includes(input.toLowerCase())}
-                            options={facilityList.map(fac => ({ label: fac.facilityName || fac.id || fac.facilityId, value: fac.id || fac.facilityId }))}
-                        />
-                    </Form.Item>
-
-                    <Form.Item name="note" label="Ghi chú vận chuyển">
-                        <Input.TextArea placeholder="Nhập biển số xe, thông tin tài xế, nhiệt độ bảo quản yêu cầu..." rows={3} />
+                    <Form.Item name="quantity" label="Số lượng" rules={[{ required: true, message: 'Vui lòng nhập số lượng!' }]}>
+                        <Input type="number" min={1} max={batchDetail?.totalBoxes || boxes.length} disabled={!!retailForm.getFieldValue('boxId')} />
                     </Form.Item>
                 </Form>
             </Modal>
@@ -602,7 +590,7 @@ export default function BatchDetail() {
                 open={isDocModalOpen}
                 onCancel={() => setIsDocModalOpen(false)}
                 footer={<Button onClick={() => setIsDocModalOpen(false)}>Đóng</Button>}
-                destroyOnClose
+                destroyOnHidden
             >
                 {loadingDocs ? (
                     <Flex justify="center" style={{ padding: 24 }}>

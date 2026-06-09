@@ -128,7 +128,6 @@ export default function DistributorWarehouseBatch() {
             setIsReceiveModalOpen(false);
             receiveForm.resetFields();
             
-            // Đợi 1 giây để Blockchain kịp cập nhật rồi mới kéo lại danh sách
             setTimeout(() => fetchBatches(), 1000);
             
         } catch (error) {
